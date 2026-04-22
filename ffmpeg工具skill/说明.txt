@@ -1,0 +1,59 @@
+已完成，且已测试通过。
+
+  已做的修改
+
+  - yt-dlp 已安装（pip --user）：
+      - 可用：python3 -m yt_dlp --version -> 2025.10.14
+  - 更新下载脚本 .codex/skills/ffmpeg-tools/scripts/download-video.sh：
+      - 直链 .mp4/.m3u8：走 ffmpeg
+      - 网页链接：走 yt-dlp
+      - 默认 --quicktime on：下载后自动转为 QuickTime 兼容 H.264 + AAC（必要时）
+      - 可选 --quicktime off：保留原编码
+  - 更新说明 .codex/skills/ffmpeg-tools/SKILL.md
+
+  测试结果
+
+  - 直链路径：ffmpeg -> 自动转码 -> 输出 h264+aac
+      - Desktop/hl_direct_quicktime.mp4
+  - 网页路径：yt-dlp -> 自动转码 -> 输出 h264+aac
+      - Desktop/hl_web_quicktime.mp4
+
+  如何使用（Skill）
+
+  - $ffmpeg-tools 下载这个视频到桌面：<url>
+  - 默认会做 QuickTime 兼容处理。
+  - 若不想转码：$ffmpeg-tools ... 并使用 --quicktime off
+
+  如何使用（脚本）
+
+  - 直链：
+
+  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
+    --url "https://example.com/video.mp4" \
+    --output ~/Desktop/video.mp4
+
+  - 网页链接：
+
+  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
+    --url "https://www.youtube.com/watch?v=xxxx" \
+    --output ~/Desktop/video.mp4
+
+  - 关闭 QuickTime 转码：
+
+  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
+    --url "<url>" \
+    --output ~/Desktop/video.mp4 \
+    --quicktime off
+
+  给其他人使用
+
+  - 最新包已更新：
+    Desktop/ffmpeg-tools-skill.zip
+  - 一键安装脚本（之前已做）：
+    Desktop/install_ffmpeg_tools_skill.sh
+
+  对方执行：
+
+  bash ~/Desktop/install_ffmpeg_tools_skill.sh ~/Desktop/ffmpeg-tools-skill.zip
+
+  然后重启 Codex。
