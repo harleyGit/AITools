@@ -1,0 +1,4 @@
+interface:
+  display_name: "FFmpeg Tools"
+  short_description: "Use FFmpeg to stitch images and save videos locally"
+  default_prompt: "Use $ffmpeg-tools to stitch multiple images into one file or download a video link to Desktop."
