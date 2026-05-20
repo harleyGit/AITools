@@ -2,6 +2,13 @@
 - [PPT技能codex-primary-runtime](#PPT技能codex-primary-runtime)
 - [开发通用技能dev_general_skill](#开发通用技能dev_general_skill)
 - [视频、图片ffmpeg-tools](#视频、图片ffmpeg-tools)
+- [笔记整理技能study-note-cleanup](#笔记整理技能study-note-cleanup)  
+  - [StudyNotes 自然语言触发配置](#StudyNotes自然语言触发配置)
+	- [触发方式](#触发方式)
+	- [配置要点](#配置要点)
+- **资料**
+	- [张雪峰Skill](https://github.com/alchaincyf/zhangxuefeng-skill?tab=readme-ov-file#安装)
+	- [Pus-skill](https://pua-skill.pages.dev/#install)
 
 
 <br/><br/><br/>
@@ -87,10 +94,21 @@
 - 视频下载；
 
 ## 使用：
-- **AI：**
-	- `ffmpeg-tools 下载这个视频到桌面：<url>`
-- **脚本：**
-	- 视频下载：
+### **AI：**
+
+- `ffmpeg-tools 下载这个视频到桌面：<url>`
+
+<br/>
+
+### 脚本：
+- **增加参数：**
+
+```sh
+--cookies-from-browser <browser>
+--cookies <path>
+```
+
+- **视频下载：**
 
 **视频链接：**
 
@@ -104,11 +122,71 @@ bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
 
 **网页中含有视频下载：**
 
+B站视频链接【点击列表中某个视频，然后详情在浏览器中播放的url】：`https://www.bilibili.com/video/BV1ED5u6cEXG/?t=9&spm_id_from=333.1007.tianma.5-3-17.click&vd_source=a7fe275f0ee54c4d2f691a823f8876b8‌`
+
 ```sh
-bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
-    --url "https://www.youtube.com/watch?v=xxxx" \
-    --output ~/Desktop/video.mp4
+bash "/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh" \
+  --url "https://www.bilibili.com/video/BV1ED5u6cEXG/" \
+  --output "$HOME/Desktop/BV1ED5u6cEXG.mp4"
 ```
+
+<br/>
+
+**在 Chrome 登录了 B 站，建议这样：**
+
+```sh
+bash "/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh" \
+  --url "https://www.bilibili.com/video/BV1ED5u6cEXG/" \
+  --output "$HOME/Desktop/BV1ED5u6cEXG.mp4" \
+  --cookies-from-browser chrome
+```
+
+<br/>
+
+**如果你用 Safari 登录：**
+
+- 视频链接是从Safari登录并拷贝的：`https://www.bilibili.com/video/BV1ED5u6cEXG/?t=9&spm_id_from=333.1007.tianma.5-3-17.click&vd_source=a7fe275f0ee54c4d2f691a823f8876b8‌`
+- 只有当你需要 B 站登录态，比如高画质、会员、受限视频时，才需要加。
+- 你前面的日志已经提示高画质缺登录态，所以建议加。
+	- 日志已经提示：
+
+```sh
+Format(s) 1080P 高清, 720P 准高清 are missing; you have to become a premium member to download them.
+Use --cookies-from-browser or --cookies for the authentication.
+```
+
+所以用：
+
+```sh
+bash "/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh" \
+  --url "https://www.bilibili.com/video/BV1ED5u6cEXG/" \
+  --output "$HOME/Desktop/BV1ED5u6cEXG.mp4" \
+  --cookies-from-browser safari
+```
+
+<br/>
+
+**只想先快速下载，不转码，速度更快：**
+
+```sh
+bash "/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh" \
+  --url "https://www.bilibili.com/video/BV1ED5u6cEXG/" \
+  --output "$HOME/Desktop/BV1ED5u6cEXG.mp4" \
+  --quicktime off \
+  --cookies-from-browser chrome
+```
+
+<br/>
+
+**关闭 QuickTime 转码：**
+
+```sh
+  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
+    --url "<url>" \
+    --output ~/Desktop/video.mp4 \
+    --quicktime off
+```
+
 
 
 ***
@@ -139,31 +217,6 @@ bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
   - 默认会做 QuickTime 兼容处理。
   - 若不想转码：$ffmpeg-tools ... 并使用 --quicktime off
 
-  如何使用（脚本）
-
-  - 直链：
-
-  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
-    --url "https://example.com/video.mp4" \
-    --output ~/Desktop/video.mp4
-
-  - 网页链接：
-
-```sh
-  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
-    --url "https://www.youtube.com/watch?v=xxxx" \
-    --output ~/Desktop/video.mp4
-```
-
-  - 关闭 QuickTime 转码：
-
-```sh
-  bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
-    --url "<url>" \
-    --output ~/Desktop/video.mp4 \
-    --quicktime off
-```
-
 ***
 <br/>
 
@@ -181,4 +234,62 @@ bash ~/.codex/skills/ffmpeg-tools/scripts/download-video.sh \
 ```
 
   然后重启 Codex。
+  
+  
+  <br/><br/><br/>
+
+***
+<br/>
+
+> <h1 id="笔记整理技能study-note-cleanup">笔记整理技能study-note-cleanup</h1>
+<br/>
+
+> <h2 id="StudyNotes 自然语言触发配置">StudyNotes 自然语言触发配置</h2>
+
+`study-note-cleanup` skill 支持自然语言触发，无需每次手动写 `使用 study-note-cleanup`。只需说"整理下 xxx.md"即可自动匹配。
+
+<br/>
+
+> <h3 id="触发方式">触发方式</h3>
+
+| 用法 | 示例 |
+|------|------|
+| **最短触发** | `整理下 xxx.md` |
+| **指定输出文件** | `整理下 old.md，输出成 new.md` |
+| **明确 StudyNotes 风格** | `把 xxx.md 整理成 StudyNotes 风格` |
+| **覆盖原文件** | `整理下 xxx.md，直接覆盖原文件` |
+| **压缩整理** | `压缩 xxx.md 为清晰笔记` |
+| **显式调用 skill** | `使用 study-note-cleanup 整理 xxx.md`（最稳，但不常用） |
+
+常用自然语言触发词：
+
+- `整理 xxx.md`
+- `整理下 xxx.md`
+- `整理笔记`
+- `优化 md`
+- `整理成 StudyNotes 风格`
+
+<br/>
+
+> <h3 id="配置要点">配置要点</h3>
+
+**两处配置缺一不可：**
+
+**1. `.ai_skill/study-note-cleanup/SKILL.md` 的 description**
+
+需包含中文自然语言触发词，例如：
+
+```yaml
+description: 当用户说"整理下 xxx.md"、"整理笔记"、"优化 Markdown 笔记"、"压缩 AI 生成的中文笔记"、"整理成 StudyNotes 风格"时使用。把冗长中文 Markdown 整理成 StudyNotes 风格笔记，包含目录、HTML heading anchors、核心代码优先、压缩解释、保留示例和技术准确性。
+```
+
+**2. `AGENTS.md` 的 Available Skills 里补触发规则**
+
+```markdown
+- 当用户说"整理下 xxx.md"、"整理笔记"、"优化 md"、"压缩笔记"、"整理成 StudyNotes 风格"时，默认使用 `.ai_skill/study-note-cleanup/SKILL.md`。
+```
+
+改完后，Codex/OpenCode 看到"整理下 xxx.md"这类请求会自动使用该 skill。
+
+
 	

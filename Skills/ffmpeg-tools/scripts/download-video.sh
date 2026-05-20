@@ -9,18 +9,22 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  download-video.sh --url <video-url> [--output <path>] [--quicktime <on|off>]
+  download-video.sh --url <video-url> [--output <path>] [--quicktime <on|off>] [--cookies-from-browser <browser>] [--cookies <path>]
 
 Options:
   --url <url>         Video URL to download
   --output <path>     Output file path (default: ~/Desktop/video-YYYYmmdd-HHMMSS.mp4)
   --quicktime <mode>  on: ensure QuickTime-compatible output (default)
                       off: keep original codec after download
+  --cookies-from-browser <browser>
+                      Pass browser cookies to yt-dlp, e.g. chrome, safari, firefox
+  --cookies <path>    Pass a Netscape-format cookies.txt file to yt-dlp
   -h, --help          Show help
 
 Notes:
   - Direct .mp4/.m3u8 links are downloaded with ffmpeg.
   - Webpage links are downloaded with yt-dlp.
+  - Some sites such as Bilibili may require cookies for higher quality or login-only videos.
   - QuickTime compatibility target: H.264 video + AAC audio in .mp4.
 EOF
 }
@@ -137,6 +141,8 @@ OUTPUT="${HOME}/Desktop/video-$(date +%Y%m%d-%H%M%S).mp4"
 QUICKTIME_MODE="on"
 DOWNLOAD_OUTPUT="$OUTPUT"
 TEMP_OUTPUT=""
+COOKIES_FROM_BROWSER=""
+COOKIES_FILE=""
 
 cleanup() {
   if [[ -n "${TEMP_OUTPUT:-}" && -f "$TEMP_OUTPUT" ]]; then
@@ -158,6 +164,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --quicktime)
       QUICKTIME_MODE="${2:-}"
+      shift 2
+      ;;
+    --cookies-from-browser)
+      COOKIES_FROM_BROWSER="${2:-}"
+      shift 2
+      ;;
+    --cookies)
+      COOKIES_FILE="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -190,7 +204,18 @@ fi
 
 if [[ "$QUICKTIME_MODE" == "on" ]]; then
   TEMP_OUTPUT="$(mktemp "${TMPDIR:-/tmp}/ffmpeg-tools-video-XXXXXX.mp4")"
+  # yt-dlp skips downloads when the output path already exists. mktemp creates
+  # the file, so remove it and keep only the unique path for yt-dlp/ffmpeg.
+  rm -f "$TEMP_OUTPUT"
   DOWNLOAD_OUTPUT="$TEMP_OUTPUT"
+fi
+
+YTDLP_EXTRA_ARGS=()
+if [[ -n "$COOKIES_FROM_BROWSER" ]]; then
+  YTDLP_EXTRA_ARGS+=(--cookies-from-browser "$COOKIES_FROM_BROWSER")
+fi
+if [[ -n "$COOKIES_FILE" ]]; then
+  YTDLP_EXTRA_ARGS+=(--cookies "$COOKIES_FILE")
 fi
 
 # Direct-media path:
@@ -209,6 +234,7 @@ if is_direct_media_url "$URL" || [[ -f "$URL" ]]; then
       --no-part \
       -f "bv*+ba/b" \
       --merge-output-format mp4 \
+      "${YTDLP_EXTRA_ARGS[@]}" \
       -o "$DOWNLOAD_OUTPUT" \
       "$URL"
     finalize_output "$DOWNLOAD_OUTPUT" "$OUTPUT"
@@ -227,6 +253,7 @@ if pick_ytdlp_cmd; then
     --no-part \
     -f "bv*+ba/b" \
     --merge-output-format mp4 \
+    "${YTDLP_EXTRA_ARGS[@]}" \
     -o "$DOWNLOAD_OUTPUT" \
     "$URL"
   finalize_output "$DOWNLOAD_OUTPUT" "$OUTPUT"
