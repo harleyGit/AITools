@@ -310,7 +310,14 @@ mimo-v2-pro -> openai/mimo-v2-pro
 mimo-omni -> openai/mimo-v2-omni
 ```
 
-## 自动启动 LiteLLM 的 Aider wrapper
+<br/><br/><br/>
+
+***
+<br/>
+
+> <h1 id=""></h1>
+
+# 自动启动 LiteLLM 的 Aider wrapper
 
 已将：
 
@@ -362,6 +369,616 @@ PID 文件：
 /Users/harleyhuang/.local/state/litellm/litellm.pid
 ```
 
+***
+<br/>
+
+## 对上述自启动说明
+
+是的。
+
+你现在这套东西，本质上已经实现了：
+
+```text
+启动 aider
+   ↓
+自动检测 LiteLLM 是否运行
+   ↓
+没运行就自动启动 LiteLLM
+   ↓
+再启动真正的 aider
+```
+
+也就是：
+
+> “Aider 自动托管 LiteLLM”
+
+这是很多人本地多模型开发时会做的方案。
+
+你看到的内容，本质是：
+
+```text
+aider 命令被“劫持”成了一个启动器(wrapper)
+```
+
+它不再直接是真正的 aider。
+
+而是：
+
+```text
+你输入 aider
+     ↓
+wrapper shell 脚本先执行
+     ↓
+wrapper 再去调用真正 aider
+```
+
+下面我拆开解释。
+
+---
+
+# 1. 你现在的文件结构
+
+你看到：
+
+```text
+/Users/harleyhuang/.local/bin/aider
+```
+
+这个：
+
+```text
+现在已经不是原始 aider
+```
+
+而是：
+
+```text
+wrapper 启动脚本
+```
+
+---
+
+真正 pipx 安装的 aider 在：
+
+```text
+/Users/harleyhuang/.local/pipx/venvs/aider-chat/bin/aider
+```
+
+这个才是真实程序。
+
+---
+
+然后：
+
+```text
+/Users/harleyhuang/.local/bin/aider-pipx
+```
+
+是原来 aider 的备份软链接。
+
+意思：
+
+```text
+aider-pipx = 原始 aider
+aider       = wrapper
+```
+
+---
+
+# 2. wrapper 是什么？
+
+wrapper 就是：
+
+```text
+套壳启动器
+```
+
+相当于：
+
+```bash
+#!/bin/bash
+
+先做一些事
+
+再启动真正程序
+```
+
+你的 wrapper 做了三件事：
+
+---
+
+# 3. 第一步：检查 LiteLLM 是否已启动
+
+它检查：
+
+```text
+http://127.0.0.1:4000/v1/models
+```
+
+这是：
+
+```text
+LiteLLM OpenAI API 地址
+```
+
+因为：
+
+LiteLLM 会模拟：
+
+```text
+OpenAI API Server
+```
+
+所以：
+
+```text
+/v1/models
+```
+
+就像 OpenAI：
+
+```text
+https://api.openai.com/v1/models
+```
+
+一样。
+
+---
+
+wrapper 会：
+
+```bash
+curl http://127.0.0.1:4000/v1/models
+```
+
+如果：
+
+* 能访问
+* 返回模型列表
+
+说明：
+
+```text
+LiteLLM 已运行
+```
+
+---
+
+# 4. 第二步：没启动则自动启动 LiteLLM
+
+如果访问失败：
+
+wrapper 就执行：
+
+```bash
+/Users/harleyhuang/.local/bin/litellm \
+  --config /Users/harleyhuang/.config/litellm/config.yaml \
+  --host 127.0.0.1 \
+  --port 4000 \
+  --telemetry False
+```
+
+意思：
+
+---
+
+## litellm
+
+启动 LiteLLM Server。
+
+---
+
+## --config
+
+指定配置文件：
+
+```text
+~/.config/litellm/config.yaml
+```
+
+里面定义：
+
+* 模型
+* API key
+* provider
+* 路由
+
+例如：
+
+```yaml
+model_list:
+  - model_name: deepseek
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: sk-xxx
+```
+
+---
+
+## --host 127.0.0.1
+
+只允许本机访问。
+
+即：
+
+```text
+localhost
+```
+
+安全些。
+
+---
+
+## --port 4000
+
+LiteLLM 开在：
+
+```text
+http://127.0.0.1:4000
+```
+
+---
+
+## --telemetry False
+
+关闭匿名遥测。
+
+防止上传统计信息。
+
+---
+
+# 5. 第三步：等待 LiteLLM Ready
+
+因为：
+
+LiteLLM 启动需要几秒。
+
+所以 wrapper 会：
+
+```bash
+循环检查 /v1/models
+```
+
+直到：
+
+```text
+HTTP 200
+```
+
+才继续。
+
+否则：
+
+```text
+Aider 会先启动
+但 API 还没 ready
+```
+
+就会报错：
+
+```text
+Connection refused
+```
+
+---
+
+# 6. 第四步：启动真正 aider
+
+最后：
+
+wrapper 调：
+
+```bash
+/Users/harleyhuang/.local/pipx/venvs/aider-chat/bin/aider
+```
+
+并自动带：
+
+```bash
+--config ~/.aider/config.yaml
+```
+
+意思：
+
+```text
+以后你不用手动写：
+
+aider --config xxx
+```
+
+wrapper 自动帮你加了。
+
+---
+
+# 7. 现在整体工作流
+
+你现在：
+
+只需要：
+
+```bash
+aider
+```
+
+背后实际发生：
+
+```text
+aider(wrapper)
+    ↓
+检查 LiteLLM
+    ↓
+自动启动 LiteLLM
+    ↓
+等待 API ready
+    ↓
+启动真正 aider
+```
+
+---
+
+# 8. 为什么这是很好的方案
+
+因为以前：
+
+你每次要：
+
+---
+
+## 手动开 LiteLLM
+
+```bash
+litellm --config ...
+```
+
+开一个 terminal。
+
+---
+
+## 再开 aider
+
+```bash
+aider
+```
+
+很烦。
+
+---
+
+现在：
+
+```text
+只需要 aider
+```
+
+即可。
+
+这就是：
+
+```text
+自动依赖启动
+```
+
+---
+
+# 9. 你现在的架构
+
+你现在实际上已经是：
+
+```text
+          aider(wrapper)
+                 ↓
+            LiteLLM
+                 ↓
+    DeepSeek / MiniMax / Qwen
+```
+
+这是很合理的。
+
+---
+
+# 10. 你还缺什么？
+
+你现在其实已经接近完整生产方案了。
+
+下一步通常会做：
+
+---
+
+# 11. 给 LiteLLM 配多个模型
+
+例如：
+
+```yaml
+model_list:
+  - model_name: deepseek
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+  - model_name: minimax
+    litellm_params:
+      model: openai/MiniMax-M1-80k
+      api_key: os.environ/MINIMAX_API_KEY
+
+  - model_name: qwen
+    litellm_params:
+      model: ollama/qwen3-coder
+      api_base: http://127.0.0.1:11434
+```
+
+然后：
+
+```bash
+aider --model openai/deepseek
+```
+
+或者：
+
+```bash
+aider --model openai/minimax
+```
+
+---
+
+# 12. 为什么 aider 里经常看到 openai/xxx
+
+因为：
+
+LiteLLM 会：
+
+```text
+把所有 provider 统一伪装成 OpenAI
+```
+
+所以：
+
+Aider 认为：
+
+```text
+它永远在访问 OpenAI
+```
+
+实际上：
+
+后面可能是：
+
+* DeepSeek
+* Claude
+* Gemini
+* Ollama
+
+---
+
+# 13. 这个 wrapper 有没有风险？
+
+有两个常见问题。
+
+---
+
+## 问题1：LiteLLM 崩了
+
+wrapper 只能：
+
+```text
+启动
+```
+
+不能：
+
+```text
+守护
+```
+
+所以：
+
+如果 LiteLLM 运行中崩了。
+
+你得重新：
+
+```bash
+aider
+```
+
+它才会重启。
+
+---
+
+## 问题2：后台进程残留
+
+有时：
+
+```text
+LiteLLM 已经启动多个
+```
+
+导致：
+
+```text
+4000 端口占用
+```
+
+所以建议：
+
+定期：
+
+```bash
+lsof -i :4000
+```
+
+查看。
+
+---
+
+# 14. 更高级方案（以后）
+
+高级用户会：
+
+---
+
+## 用 launchd(macOS)
+
+真正后台守护：
+
+```text
+LiteLLM 永久后台运行
+```
+
+系统启动自动拉起。
+
+---
+
+## 或 Docker
+
+```bash
+docker compose up -d
+```
+
+长期运行 LiteLLM。
+
+---
+
+# 15. 你现在这套适合吗？
+
+非常适合。
+
+尤其你现在：
+
+* Mac
+* 多模型
+* aider
+* DeepSeek
+* MiniMax
+* 本地模型
+
+这是很舒服的开发流。
+
+---
+
+# 16. 最后一句总结
+
+你现在实际上已经完成了：
+
+```text
+Aider 一键启动 AI 开发环境
+```
+
+即：
+
+```text
+输入 aider
+=
+自动启动 LiteLLM
++
+自动连接模型
++
+自动加载 aider 配置
+```
+
+这是正确且成熟的做法。
+
+
+***
+<br/><br/>
 ## 使用方法
 
 新开一个终端，让 `pipx ensurepath` 写入的 PATH 生效。
