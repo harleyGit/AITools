@@ -513,3 +513,51 @@ ln -sfn /usr/local/Caskroom/codex/0.132.0/codex-x86_64-apple-darwin /usr/local/b
 ln -sfn /usr/local/Caskroom/codex/0.132.0/codex-x86_64-apple-darwin /usr/local/bin/codex-bin
 ln -sfn /Users/harleyhuang/.local/bin/codex-litellm-wrapper /usr/local/bin/codex
 ```
+
+
+***
+<br/><br/><br/>
+> <h2 id=""></h2>
+
+
+切换模型在codex cli + LLiteLLM通过：
+
+```sh
+codex -p mimo-v25
+```
+
+
+方案 A（推荐）：用“合法 model + LiteLLM 映射”
+Step 1：改 Codex model（关键）
+
+把：
+
+model = "gpt-5.5"
+
+改成：
+
+model = "gpt-4o-mini"
+
+👉 这一步是为了绕过 Codex 校验层
+
+Step 2：保留 LiteLLM 映射（你现在是对的）
+[profiles.mimo-v25-pro]
+model_provider = "litellm"
+model = "gpt-4o-mini"   # ⚠️ 改这里，不要用 mimo 名字
+model_reasoning_effort = "high"
+Step 3：LiteLLM config 才做映射
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://token-plan-cn.xiaomimimo.com/v1
+🎯 关键思想（一定要理解）
+
+你现在的问题本质是：
+
+Codex CLI 不允许“未知 model name”
+
+所以必须做到：
+
+Codex sees: gpt-4o-mini   ✔ allowed
+LiteLLM maps: mimo-v2.5-pro ✔ real model
