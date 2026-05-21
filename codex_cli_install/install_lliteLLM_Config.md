@@ -396,6 +396,102 @@ sandbox: read-only
 OK
 ```
 
+## Codex profile 与 LiteLLM model_name 映射规则
+
+Codex CLI 的 profile 名称只在 Codex 本地生效，不会直接传给 LiteLLM。例如：
+
+```toml
+[profiles.mimo-v25-pro-v1]
+model_provider = "litellm"
+model = "mimo-v2.5-pro"
+model_reasoning_effort = "high"
+```
+
+这里真正会被 Codex 发送给 LiteLLM 的是：
+
+```text
+model = "mimo-v2.5-pro"
+```
+
+因此 LiteLLM 的 `/Users/harleyhuang/.config/litellm/config.yaml` 里必须存在完全同名的 `model_name`：
+
+```yaml
+model_list:
+  - model_name: mimo-v2.5-pro
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://token-plan-cn.xiaomimimo.com/v1
+      api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
+```
+
+四层名称关系如下：
+
+```text
+codex -p mimo-v25-pro-v1
+        -> 读取 Codex profile: [profiles.mimo-v25-pro-v1]
+        -> Codex 请求模型名: model = "mimo-v2.5-pro"
+        -> LiteLLM 匹配: model_name: mimo-v2.5-pro
+        -> LiteLLM 调上游: litellm_params.model: openai/mimo-v2.5-pro
+```
+
+如果 Codex profile 写成下面这样：
+
+```toml
+[profiles.mimo-v25-pro]
+model_provider = "litellm"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+```
+
+那么 LiteLLM 需要有一个同名的兼容别名：
+
+```yaml
+model_list:
+  - model_name: gpt-5.5
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://token-plan-cn.xiaomimimo.com/v1
+      api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
+```
+
+这不是 Codex 自动把 `gpt-5.5` 识别成 MiMo，而是 LiteLLM 把本地模型名 `gpt-5.5` 映射到了上游 `openai/mimo-v2.5-pro`。
+
+推荐同时保留两个 LiteLLM 条目：
+
+```yaml
+model_list:
+  - model_name: mimo-v2.5-pro
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://token-plan-cn.xiaomimimo.com/v1
+      api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
+
+  - model_name: gpt-5.5
+    litellm_params:
+      model: openai/mimo-v2.5-pro
+      api_base: https://token-plan-cn.xiaomimimo.com/v1
+      api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
+```
+
+这样可以同时支持：
+
+```bash
+codex -p mimo-v25-pro-v1
+codex -p mimo-v25-pro
+```
+
+判断配置是否正确的规则很简单：Codex profile 里的 `model = "..."` 必须能在 LiteLLM 的 `model_list[].model_name` 中找到同名条目；`model_name` 再通过 `litellm_params.model` 指向真实上游模型。
+
+端口关系不冲突：
+
+```text
+Codex CLI -> http://127.0.0.1:4001/v1/responses
+4001 bridge -> http://127.0.0.1:4000/v1/chat/completions
+LiteLLM 4000 -> https://token-plan-cn.xiaomimimo.com/v1/chat/completions
+```
+
+Codex 使用 `4001` 是因为当前需要 Responses-to-Chat bridge；Aider 可以直接使用 LiteLLM 的 `4000/v1` Chat Completions 兼容接口。两者同时开启时，一个监听 `4000`，一个监听 `4001`，不会因为端口相同而冲突。
+
 ## 回退方法
 
 绕过 wrapper，直接运行原始 Codex：
