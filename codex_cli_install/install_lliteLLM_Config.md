@@ -826,3 +826,88 @@ codex exec -p gpt-5.4-mini --skip-git-repo-check "只输出 HGCM_OK"
 /usr/local/bin/codex     -> /Users/harleyhuang/.local/bin/codex-litellm-wrapper
 /usr/local/bin/codex-bin -> 当前 Codex 原始 binary
 ```
+
+## Codex CLI 升级后的 symlink 检查
+
+Homebrew 升级 Codex CLI 后，可能会重新覆盖 `/usr/local/bin/codex` 的 symlink。本文当前方案依赖 wrapper 自动启动 LiteLLM 和 Responses bridge，因此升级后需要检查入口链路是否仍然正确。
+
+期望状态：
+
+```text
+/usr/local/bin/codex     -> /Users/harleyhuang/.local/bin/codex-litellm-wrapper
+/usr/local/bin/codex-bin -> 当前 Codex 原始 binary
+```
+
+其中：
+
+- `codex` 指向 wrapper，用于自动设置 `LITELLM_API_KEY`、启动 LiteLLM 4000、启动 bridge 4001。
+- `codex-bin` 指向 Homebrew 安装的真实 Codex binary，由 wrapper 最后调用。
+
+### 被覆盖后的影响
+
+如果升级后 `/usr/local/bin/codex` 被 Homebrew 改回真实 binary，例如：
+
+```text
+/usr/local/bin/codex -> /usr/local/Caskroom/codex/<new-version>/codex-x86_64-apple-darwin
+```
+
+那么执行 `codex` 会绕过 wrapper，常见影响：
+
+- LiteLLM 4000 不会自动启动。
+- Responses bridge 4001 不会自动启动。
+- `LITELLM_API_KEY=sk-local-litellm` 不会自动注入。
+- Codex 虽然仍能读取 `config.toml`，但本地 provider 可能连接失败或鉴权变量缺失。
+
+### 升级后检查
+
+每次升级后执行：
+
+```bash
+ls -l /usr/local/bin/codex /usr/local/bin/codex-bin
+```
+
+如果 `codex` 没有指向 wrapper，执行恢复命令。
+
+### 恢复 symlink
+
+先确认新版本真实 binary 路径，例如：
+
+```bash
+ls -l /usr/local/Caskroom/codex/*/codex-x86_64-apple-darwin
+```
+
+然后把 `codex-bin` 指向新版本真实 binary，把 `codex` 指回 wrapper：
+
+```bash
+ln -sfn /usr/local/Caskroom/codex/<new-version>/codex-x86_64-apple-darwin /usr/local/bin/codex-bin
+ln -sfn /Users/harleyhuang/.local/bin/codex-litellm-wrapper /usr/local/bin/codex
+```
+
+示例：
+
+```bash
+ln -sfn /usr/local/Caskroom/codex/0.133.0/codex-x86_64-apple-darwin /usr/local/bin/codex-bin
+ln -sfn /Users/harleyhuang/.local/bin/codex-litellm-wrapper /usr/local/bin/codex
+```
+
+### 恢复后验证
+
+```bash
+codex --strict-config doctor --json
+```
+
+关键检查结果：
+
+```text
+model provider = litellm
+provider auth env var = LITELLM_API_KEY (present)
+litellm API base URL = http://127.0.0.1:4001/v1 reachable
+```
+
+再做一次简单模型调用：
+
+```bash
+codex exec --skip-git-repo-check "只输出 OK"
+```
+
+如果在非 HGCM_AI 指定局域网内，建议使用可访问的 MiMo profile 验证；HGCM_AI profile 在非指定局域网会因为上游不可达而失败，这不代表 symlink 或本地配置错误。
