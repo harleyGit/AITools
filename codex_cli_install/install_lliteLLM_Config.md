@@ -561,3 +561,268 @@ Codex CLI 不允许“未知 model name”
 
 Codex sees: gpt-4o-mini   ✔ allowed
 LiteLLM maps: mimo-v2.5-pro ✔ real model
+
+## HGCM_AI 配置补充
+
+HGCM_AI 是 OpenAI-compatible provider。Codex CLI 仍然走本机 LiteLLM Responses bridge：
+
+```text
+Codex CLI -> http://127.0.0.1:4001/v1/responses
+4001 bridge -> http://127.0.0.1:4000/v1/chat/completions
+LiteLLM 4000 -> https://open-xxxxx:7799/v1/chat/completions
+```
+
+注意：`https://open-xxxx:7799/v1` 只有在指定局域网内可访问。不在该网络时，本地 Codex/LiteLLM 配置可以加载成功，但实际模型调用会因为无法连接 HGCM_AI 上游而失败。
+
+### LiteLLM config.yaml
+
+配置文件：
+
+```text
+/Users/harleyhuang/.config/litellm/config.yaml
+```
+
+追加到 `model_list` 中。示例里不要提交真实 key，个人机器上替换为实际 HGCM_AI API key：
+
+```yaml
+  - model_name: gpt-5.5
+    litellm_params:
+      model: openai/gpt-5.5
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-5.4
+    litellm_params:
+      model: openai/gpt-5.4
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-5.4-mini
+    litellm_params:
+      model: openai/gpt-5.4-mini
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-5.2
+    litellm_params:
+      model: openai/gpt-5.2
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-5.3-codex
+    litellm_params:
+      model: openai/gpt-5.3-codex
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-5.3-codex-spark
+    litellm_params:
+      model: openai/gpt-5.3-codex-spark
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: codex-auto-review
+    litellm_params:
+      model: openai/codex-auto-review
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gpt-image-2
+    litellm_params:
+      model: openai/gpt-image-2
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-3.1-pro-preview
+    litellm_params:
+      model: openai/gemini-3.1-pro-preview
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-3.1-flash-lite-preview
+    litellm_params:
+      model: openai/gemini-3.1-flash-lite-preview
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-3-pro-preview
+    litellm_params:
+      model: openai/gemini-3-pro-preview
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-3-flash-preview
+    litellm_params:
+      model: openai/gemini-3-flash-preview
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: openai/gemini-2.5-pro
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: openai/gemini-2.5-flash
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+
+  - model_name: gemini-2.5-flash-lite
+    litellm_params:
+      model: openai/gemini-2.5-flash-lite
+      api_base: https://open-xxxx:7799/v1
+      api_key: "PASTE_YOUR_HGCM_AI_API_KEY_HERE"
+```
+
+### Codex config.toml
+
+配置文件：
+
+```text
+/Users/harleyhuang/.codex/config.toml
+```
+
+全局默认继续指向 LiteLLM provider：
+
+```toml
+model_provider = "litellm"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+```
+
+LiteLLM provider 保持走本机 bridge：
+
+```toml
+[model_providers.litellm]
+name = "LiteLLM Local Proxy"
+base_url = "http://127.0.0.1:4001/v1"
+env_key = "LITELLM_API_KEY"
+wire_api = "responses"
+request_max_retries = 4
+stream_max_retries = 5
+stream_idle_timeout_ms = 300000
+```
+
+新增 HGCM_AI profiles：
+
+```toml
+[profiles."gpt-5.5"]
+model_provider = "litellm"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+
+[profiles."gpt-5.4"]
+model_provider = "litellm"
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+
+[profiles."gpt-5.4-mini"]
+model_provider = "litellm"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "high"
+
+[profiles."gpt-5.2"]
+model_provider = "litellm"
+model = "gpt-5.2"
+model_reasoning_effort = "high"
+
+[profiles."gpt-5.3-codex"]
+model_provider = "litellm"
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+
+[profiles."gpt-5.3-codex-spark"]
+model_provider = "litellm"
+model = "gpt-5.3-codex-spark"
+model_reasoning_effort = "high"
+
+[profiles.codex-auto-review]
+model_provider = "litellm"
+model = "codex-auto-review"
+model_reasoning_effort = "high"
+
+[profiles."gpt-image-2"]
+model_provider = "litellm"
+model = "gpt-image-2"
+
+[profiles."gemini-3.1-pro-preview"]
+model_provider = "litellm"
+model = "gemini-3.1-pro-preview"
+model_reasoning_effort = "high"
+
+[profiles."gemini-3.1-flash-lite-preview"]
+model_provider = "litellm"
+model = "gemini-3.1-flash-lite-preview"
+model_reasoning_effort = "high"
+
+[profiles.gemini-3-pro-preview]
+model_provider = "litellm"
+model = "gemini-3-pro-preview"
+model_reasoning_effort = "high"
+
+[profiles.gemini-3-flash-preview]
+model_provider = "litellm"
+model = "gemini-3-flash-preview"
+model_reasoning_effort = "high"
+
+[profiles.gemini-2-5-pro]
+model_provider = "litellm"
+model = "gemini-2.5-pro"
+model_reasoning_effort = "high"
+
+[profiles.gemini-2-5-flash]
+model_provider = "litellm"
+model = "gemini-2.5-flash"
+model_reasoning_effort = "high"
+
+[profiles.gemini-2-5-flash-lite]
+model_provider = "litellm"
+model = "gemini-2.5-flash-lite"
+model_reasoning_effort = "high"
+```
+
+### 验证
+
+只验证本地配置是否正确加载：
+
+```bash
+codex --strict-config doctor --json
+```
+
+看到下面信息即可说明 Codex 本地配置链路正确：
+
+```text
+model provider = litellm
+provider auth env var = LITELLM_API_KEY (present)
+litellm API base URL = http://127.0.0.1:4001/v1 reachable
+```
+
+在指定局域网内可做端到端模型调用：
+
+```bash
+codex exec -p gpt-5.4-mini --skip-git-repo-check "只输出 HGCM_OK"
+```
+
+不在指定局域网内时，LiteLLM 能启动并加载模型列表，但实际调用会在上游连接阶段失败；这不是 Codex profile 或 LiteLLM model_list 配置错误。
+
+### 个人操作范围
+
+如果机器上已经完成过本文前面的 LiteLLM、bridge、wrapper 和 symlink 安装，个人日常新增或切换模型通常只需要改两个文件：
+
+```text
+/Users/harleyhuang/.config/litellm/config.yaml
+/Users/harleyhuang/.codex/config.toml
+```
+
+判断规则：Codex profile 里的 `model = "..."` 必须能在 LiteLLM 的 `model_list[].model_name` 中找到同名条目。
+
+如果是全新机器或 Homebrew 升级后破坏了入口链路，还需要额外确认这些内容：
+
+```text
+/Users/harleyhuang/.local/bin/codex-litellm-wrapper
+/Users/harleyhuang/.local/bin/codex-litellm-responses-bridge.py
+/usr/local/bin/codex     -> /Users/harleyhuang/.local/bin/codex-litellm-wrapper
+/usr/local/bin/codex-bin -> 当前 Codex 原始 binary
+```
