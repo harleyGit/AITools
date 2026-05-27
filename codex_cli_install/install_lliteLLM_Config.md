@@ -90,10 +90,7 @@ model_list:
     litellm_params:
       model: openai/mimo-v2.5
       api_base: https://token-plan-cn.xiaomimimo.com/v1
-      api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
-
-  - model_name: mimo-v2.5-tts-voiceclone
-    litellm_params:
+          litellm_params:
       model: openai/mimo-v2.5-tts-voiceclone
       api_base: https://token-plan-cn.xiaomimimo.com/v1
       api_key: "PASTE_YOUR_XIAOMI_API_KEY_HERE"
