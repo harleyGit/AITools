@@ -57,3 +57,36 @@
   bash ~/Desktop/install_ffmpeg_tools_skill.sh ~/Desktop/ffmpeg-tools-skill.zip
 
   然后重启 Codex。
+
+
+
+
+
+
+
+
+
+
+
+感觉图片、视频太大了，优化修改后：
+
+---
+使用方法
+下载视频：
+# 基本使用
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh --url "https://www.bilibili.com/video/BV1T45E6BE7x/"
+# 指定输出路径
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh --url "https://..." --output ~/Desktop/video.mp4
+# 使用 cookies（获取更高画质）
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh --url "https://..." --cookies-from-browser chrome
+# 保持原始编码（不转码）
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/download-video.sh --url "https://..." --quicktime off
+拼接图片：
+# 基本使用（PNG 压缩）
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode grid --cols 2 ~/Desktop/test-images/
+# 匹配输入总大小模式
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode grid --cols 2 --compress match --output ~/Desktop/output.png ~/Desktop/test-images/
+# JPEG 输出
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode grid --cols 2 --compress match --output ~/Desktop/output.jpg ~/Desktop/test-images/
+# 水平拼接
+/Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode h img1.png img2.png img3.png
