@@ -90,3 +90,6 @@
 /Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode grid --cols 2 --compress match --output ~/Desktop/output.jpg ~/Desktop/test-images/
 # 水平拼接
 /Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode h img1.png img2.png img3.png
+
+# 竖直拼接 输出 22.png长截图  改进背景图为白色，黑色太丑
+ /Users/ganghuang/HGFiles/GitHub/AITools/Skills/ffmpeg-tools/scripts/compose-images.sh --mode v 1.png 2.png 3.png 4.png 5.png 6.png 7.png 8.png 9.png --output /Users/ganghuang/Desktop/22.png
