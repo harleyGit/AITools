@@ -13,6 +13,12 @@
 # - ffmpeg：视频处理工具，用于下载和转码视频
 # - ffprobe：视频信息分析工具，用于检查视频编码格式
 # - yt-dlp：视频网站下载工具，支持YouTube、Bilibili等网站
+#
+# 给初学者的阅读提示：
+# - 这个脚本有两条下载路线：直接视频链接走 ffmpeg，网页链接走 yt-dlp。
+# - 下载完成后，如果 --quicktime on，会检查视频编码；不兼容时再用 ffmpeg 转码。
+# - Bash 数组用于保存命令和参数，避免路径或 URL 里有空格时被错误拆分。
+# - 主要流程是：解析参数 -> 检查依赖 -> 准备临时文件 -> 下载 -> 必要时转码 -> 输出结果。
 # =============================================================================
 
 # set -euo pipefail：Shell脚本的安全选项
@@ -403,16 +409,24 @@ if is_direct_media_url "$URL" || [[ -f "$URL" ]]; then
   # 如果 ffmpeg 直接下载失败，尝试使用 yt-dlp 作为备选方案
   if pick_ytdlp_cmd; then
     echo "[WARN] ffmpeg direct copy failed; trying yt-dlp fallback..."
+    # yt-dlp 参数说明：
+    # --no-playlist：只下载当前视频，不下载整个播放列表
+    # --no-part：不保留 .part 临时分片文件
+    # -f "bv*[height<=720]+ba/b[height<=720]/b"：优先选择 720p 及以下的视频+音频
+    # --merge-output-format mp4：视频和音频合并后封装为 MP4
+    # --embed-metadata：把标题、作者等元数据写入文件
+    # --no-check-certificates：跳过证书检查，处理部分证书异常的网站
+    # -o "$DOWNLOAD_OUTPUT"：指定下载输出路径
     "${YTDLP_CMD[@]}" \
-      --no-playlist \                    # 不下载播放列表，只下载单个视频
-      --no-part \                        # 不使用分段下载
-      -f "bv*[height<=720]+ba/b[height<=720]/b" \  # 格式选择：720p或更低的视频+最佳音频
-      --merge-output-format mp4 \        # 合并后输出为MP4格式
-      --embed-metadata \                 # 嵌入元数据（标题、作者等）
-      --no-check-certificates \          # 跳过SSL证书检查
-      "${YTDLP_EXTRA_ARGS[@]+"${YTDLP_EXTRA_ARGS[@]}"}" \  # 传递cookies参数
-      -o "$DOWNLOAD_OUTPUT" \            # 输出文件路径
-      "$URL"                             # 输入URL
+      --no-playlist \
+      --no-part \
+      -f "bv*[height<=720]+ba/b[height<=720]/b" \
+      --merge-output-format mp4 \
+      --embed-metadata \
+      --no-check-certificates \
+      "${YTDLP_EXTRA_ARGS[@]+"${YTDLP_EXTRA_ARGS[@]}"}" \
+      -o "$DOWNLOAD_OUTPUT" \
+      "$URL"
     finalize_output "$DOWNLOAD_OUTPUT" "$OUTPUT"
     exit 0
   fi
@@ -428,16 +442,18 @@ fi
 # =============================================================================
 if pick_ytdlp_cmd; then
   echo "[INFO] Using yt-dlp for webpage URL..."
+  # 这里的参数和上面的 fallback 基本一致，只是这是网页链接的主下载路径。
+  # yt-dlp 会先解析网页，找出真实的视频/音频地址，再下载并合并。
   "${YTDLP_CMD[@]}" \
-    --no-playlist \                      # 不下载播放列表，只下载单个视频
-    --no-part \                          # 不使用分段下载
-    -f "bv*[height<=720]+ba/b[height<=720]/b" \  # 格式选择：720p或更低的视频+最佳音频
-    --merge-output-format mp4 \          # 合并后输出为MP4格式
-    --embed-metadata \                   # 嵌入元数据（标题、作者等）
-    --no-check-certificates \            # 跳过SSL证书检查
-    "${YTDLP_EXTRA_ARGS[@]+"${YTDLP_EXTRA_ARGS[@]}"}" \  # 传递cookies参数
-    -o "$DOWNLOAD_OUTPUT" \              # 输出文件路径
-    "$URL"                               # 输入URL
+    --no-playlist \
+    --no-part \
+    -f "bv*[height<=720]+ba/b[height<=720]/b" \
+    --merge-output-format mp4 \
+    --embed-metadata \
+    --no-check-certificates \
+    "${YTDLP_EXTRA_ARGS[@]+"${YTDLP_EXTRA_ARGS[@]}"}" \
+    -o "$DOWNLOAD_OUTPUT" \
+    "$URL"
   finalize_output "$DOWNLOAD_OUTPUT" "$OUTPUT"
   exit 0
 fi
