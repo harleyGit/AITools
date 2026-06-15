@@ -95,6 +95,39 @@ move_to_trash() {
   /bin/mv "$target" "$destination"
 }
 
+# 使用管理员权限把目标移动到当前用户废纸篓。
+#
+# 这个函数只在普通移动失败、且用户明确同意授权后调用。它不会自动尝试 sudo，
+# 避免脚本在用户没有心理准备时弹出密码输入或提升权限。
+#
+# 为什么仍然移动到当前用户的 `~/.Trash`：
+#   这样用户可以在自己的废纸篓里看到被移动的项目，必要时还能恢复。
+#
+# 为什么最后要 `chown`：
+#   `sudo mv` 移动后的文件可能保持 root 或原 owner。把废纸篓内目标重新归属
+#   给当前用户，可以避免用户之后无法从废纸篓恢复或清空。
+move_to_trash_with_sudo() {
+  local target="$1"
+  local trash_dir="$HOME/.Trash"
+  local target_name="${target:t}"
+  local destination="$trash_dir/$target_name"
+  local counter=1
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo "  sudo is not available in this environment."
+    return 1
+  fi
+
+  /bin/mkdir -p "$trash_dir"
+  while [[ -e "$destination" ]]; do
+    destination="$trash_dir/${target_name}.$counter"
+    counter=$((counter + 1))
+  done
+
+  sudo /bin/mv "$target" "$destination"
+  sudo /usr/sbin/chown -R "$USER" "$destination" 2>/dev/null || true
+}
+
 # 记录一个已经发现、且当前真实存在的候选路径。
 #
 # risk 表示处理策略：
@@ -454,7 +487,24 @@ for i in {1..${#item_paths[@]}}; do
   # 其他可清理的用户级缓存或配置文件。
   if ! move_to_trash "${item_paths[$i]}"; then
     echo "Failed to move to Trash: ${item_paths[$i]}"
-    echo "  Reason: permission denied or target is protected. Try running with proper permissions or remove it manually from Finder."
+    echo "  Reason: permission denied or target is protected."
+    echo "  This item may require administrator permission."
+    printf "Grant administrator permission and try this item again? [y/N] "
+    read -r permission_answer || permission_answer=""
+    case "${permission_answer:l}" in
+      y|yes)
+        echo "Retrying with administrator permission: ${item_paths[$i]}"
+        if move_to_trash_with_sudo "${item_paths[$i]}"; then
+          echo "Moved with administrator permission: ${item_paths[$i]}"
+        else
+          echo "Failed even with administrator permission: ${item_paths[$i]}"
+          echo "  You may need to remove it manually from Finder or System Settings."
+        fi
+        ;;
+      *)
+        echo "Skipped because administrator permission was not granted: ${item_paths[$i]}"
+        ;;
+    esac
     continue
   fi
 done
