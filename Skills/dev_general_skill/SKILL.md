@@ -34,17 +34,17 @@ When committing code to a git remote repository or creating local commits intend
 
 Type and emoji mapping:
 
-- `feat`: 🫧 New feature
-- `fix`: 💯 Bug fix
-- `docs`: 🍎🧩 Documentation change
-- `style`: 🍄 Code formatting change that does not affect runtime behavior
-- `refactor`: 🍀 Refactor that is neither a new feature nor a bug fix
-- `test`: ☔️ Add or update tests
+- `feat`:  New feature
+- `fix`:  Bug fix
+- `docs`:  Documentation change
+- `style`:  Code formatting change that does not affect runtime behavior
+- `refactor`:  Refactor that is neither a new feature nor a bug fix
+- `test`:  Add or update tests
 
 Examples:
 
 ```text
-feat: 🫧 新增用户登录功能
+feat:  新增用户登录功能
 fix: 💯 修复登录验证逻辑错误
 docs: 🍎🧩 更新API文档
 style: 🍄 格式化代码缩进
