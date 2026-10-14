@@ -19,6 +19,35 @@ description: 当新增或修改 React 页面、组件、状态流、路由、请
 - 列表使用稳定业务标识作为 key，核对重排和局部状态是否保持正确。
 - 状态更新保持不可变，依赖旧值时使用函数式更新；类组件不要直接修改 `this.state` 或假设 `setState` 后立即可读，并核对事件回调的 `this` 绑定。
 
+### 变量与默认 props 注释（类组件、函数组件均适用）
+- 新增或修改组件时，对涉及的变量在声明处补中文注释：类组件的 `state` 每个字段、实例字段、静态字段，以及函数组件的 `useState`、`useReducer` 状态、`useRef`、局部变量和派生值都不能只依赖名称表达含义。
+- 注释说明业务用途、单位、初始值或默认值及其语义；涉及 `null`、`undefined`、空字符串、空数组、枚举、计数器、请求标记、定时器时，明确空值含义、取值范围或生命周期。不能只写“余额”“错误”等名称翻译。
+- `static defaultProps`、函数参数解构默认值、组件内 props 解构的默认值均逐项说明用途、默认值及缺省行为；必需或由路由注入的 props 注明来源及“无默认值”，不要为了注释额外增加空回调或虚构业务默认值。
+- 对参数和解构变量，可在相邻 JSDoc 或解构声明前按字段说明；已有 `state`/props 字段注释可引用其语义，局部仍需说明当前用途和约束，避免多处维护互相矛盾的默认值。
+- 注释与实现同步更新；沿用当前 React 版本支持的默认值写法，不为补注释把类组件迁移成函数组件，也不对无关文件作批量改写。
+
+```jsx
+class HGWalletPage extends React.Component {
+  static defaultProps = {
+    hgPreview: false, // 默认展示完整记录页；true 时仅展示最近记录预览。
+  };
+  state = {
+    hgBalance: null, // M币余额，保留服务端十进制字符串；null 表示尚未获取。
+    hgBalanceError: "", // 余额查询错误文案；空字符串表示没有错误。
+  };
+  hgRequest = null; // 当前请求身份标记；尚未请求或卸载后为 null，用于丢弃旧响应。
+}
+
+function HGWalletSummary({
+  hgTitle = "我的钱包", // 标题缺省为“我的钱包”，允许调用方按展示场景覆盖。
+  hgBalance = null, // M币余额字符串；默认 null 表示尚未获取，不等同于零余额。
+}) {
+  // 展示用余额文本；尚未获取时显示占位符，不参与金额运算。
+  const hgBalanceText = hgBalance ?? "--";
+  return <p>{hgTitle}：{hgBalanceText} M币</p>;
+}
+```
+
 ## 3. 管理副作用与异步
 - 将用户事件处理与外部系统同步分开，不为纯计算添加 Effect。
 - 使用 Hook 时遵守调用规则，核对依赖、闭包读取和清理函数。
