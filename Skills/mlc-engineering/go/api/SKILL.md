@@ -15,6 +15,13 @@ description: 当任务涉及 Go HTTP 或 RPC 接口开发、请求校验、响�
 5. 保持 HTTP 状态、业务错误码、响应结构和 RPC 错误语义；内部诊断上下文不直接作为响应返回。
 6. 数据库和外部调用沿用请求 context，分配超时并释放 cancel；独立任务有显式生命周期，不借脱离 context 掩盖超时。
 
+## 接口注册与 API Guard 同步（必查）
+- 每次新增接口，必须同时核对业务路由注册和 API Guard 接口规则；修改路径、HTTP 方法、版本或鉴权要求时也必须同步更新，不能仅添加 handler 或路由。
+- 在 MLC_GO 中，检查 `internal/pkg/hg_router/` 中对应模块路由，以及 `internal/pkg/server/hg_router_rules.go` 中对应的 `*MethodRules()`。确保 Path、Version、Methods、NeedAuth 和权限要求与路由契约一致；Guard 路径以实际 `StripPrefix` 后的模块内路径为准。
+- 典型遗漏：`GET /api/v1/video_upload/detail` 已注册，但 `VideoUploadMethodRules()` 未登记 `GET /detail`，会在进入 handler 前返回 `404 interface not found`。此时先检查规则匹配，不要误判为详情数据缺失。
+- 新增或修改接口时，补充或复用路由目录与 Guard 规则一致性测试，并通过真实路由组及根入口相同的 `StripPrefix` 链验证；仅直接调用 handler 的测试不能覆盖此类问题。
+- 验证区分路由可达、鉴权通过与业务成功：缺少公共请求头、签名或 JWT 时，应按既有协议返回对应校验错误，不能为消除404关闭鉴权。涉及前端代理时还需核对实际代理 URL；未携带有效登录会话验证成功响应，不得宣称完整接口或浏览器验收通过。
+
 ## 幂等与容量
 - 写接口的幂等键绑定调用主体和请求语义，明确存储、保留期、载荷冲突、并发处理和超时后的结果查询方式。
 - 仅对可安全重放操作重试，限制次数、总预算并退避，避免放大下游压力。
