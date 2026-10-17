@@ -24,4 +24,4 @@ description: 当实施功能、修复缺陷、重构或调整模块及依赖时�
 
 ## 交付
 - 按 `testing` 选择相关检查，先核对外部副作用；审查任务使用 `code-review`。
-- 检查最终差异，排除无关文件和产物；依据实际证据报告结果与风险，输出和提交参照 `dev_general_skill`。
+- 检查最终差异，排除无关文件和产物；依据实际证据报告结果与风险。每次回复遵循 [output](../output/SKILL.md) 的前缀要求，最终回复前必须执行其 `06-output.md`；提交参照 `dev_general_skill`。

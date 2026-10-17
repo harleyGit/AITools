@@ -7,7 +7,7 @@ description: 当任务涉及 iOS、UIKit、Swift、Objective-C 混编、SnapKit�
 
 ## 适用边界
 - 项目事实与硬约束以目标仓库 `AGENTS.md`、Xcode 配置和依赖锁文件为准。
-- 通用方法按需引用 `common/` 下的 `engineering-workflow`、`security`、`testing`、`code-review`；输出与提交参照 `dev_general_skill`。
+- 通用方法按需引用 `common/` 下的 `engineering-workflow`、`security`、`testing`、`code-review`；每次回复遵循 [output](../common/output/SKILL.md) 的前缀要求，最终回复前必须执行其 `06-output.md`，纯问答和无文件改动也适用；提交参照 `dev_general_skill`。
 
 ## 工程核查
 - 区分 Swift language mode、Xcode 版本和 Swift 编译器工具链版本；不默认升级语言模式、Xcode、依赖管理方式或并发模型。

@@ -21,6 +21,9 @@ mlc-engineering/
 │   ├── engineering-workflow/SKILL.md
 │   ├── code-review/SKILL.md
 │   ├── security/SKILL.md
+│   ├── output/
+│   │   ├── SKILL.md
+│   │   └── 06-output.md
 │   └── testing/SKILL.md
 ├── go/
 │   ├── SKILL.md
@@ -37,7 +40,7 @@ mlc-engineering/
 └── ios/SKILL.md
 ```
 
-共 16 个技能，`name` 与所在末级目录相同且在本目录唯一。`statistic`、`danmaku` 仅用于 MLC_GO 对应业务；其他技能遵循自身任务触发描述。HTTP 接口方法统一归 `api`，统计统一归 `statistic`，不建立重复 `http`、`static` 或第二份 ClickHouse 技能。
+共 17 个技能，`name` 与所在末级目录相同且在本目录唯一。`statistic`、`danmaku` 仅用于 MLC_GO 对应业务；其他技能遵循自身任务触发描述。HTTP 接口方法统一归 `api`，统计统一归 `statistic`，不建立重复 `http`、`static` 或第二份 ClickHouse 技能。
 
 ## OpenCode 配置
 
@@ -54,7 +57,9 @@ mlc-engineering/
 
 `skills` 是对象，不是数组。OpenCode 递归扫描该路径下的 `**/SKILL.md`；不需要为子目录逐一配置路径。其他机器应按实际仓库位置调整路径。
 
-输出与提交约定复用相邻的 `../dev_general_skill/SKILL.md`。若该技能未在当前客户端注册，涉及交付或提交时按此路径读取；不在各语言技能复制一套提交规范。
+每次回复必须遵循 [output](common/output/SKILL.md) 的前缀要求。回答问题或完成本轮工作后、发送最终回复前，必须执行 [06-output.md](common/output/06-output.md)，纯问答、无文件改动和受阻任务也适用。`SKILL.md` 提供可发现的入口，`06-output.md` 集中维护交付正文，不在各语言技能复制。技能未在当前客户端注册时按上述路径读取并执行。
+
+提交约定继续复用相邻的 `../dev_general_skill/SKILL.md`；涉及提交时按此路径读取，不在各语言技能复制一套提交规范。`output` 补充并细化其中的最终回复要求。
 
 MLC 的 Claude、Cursor、Antigravity 规则入口引用项目 `AGENTS.md`，仅在相关任务读取 iOS 技能。其他客户端不保证识别 OpenCode 配置，需要独立验证其加载方式。
 
@@ -70,7 +75,7 @@ MLC 的 Claude、Cursor、Antigravity 规则入口引用项目 `AGENTS.md`，仅
 
 1. 检查三个 `opencode.json` 可解析且仅通过 `skills.paths` 注册公共技能，没有强载技能正文的 `instructions`。
 2. 检查每个技能 frontmatter 的 `name`、`description`、名称唯一性以及引用目标存在。
-3. 从各项目运行 `opencode debug skill`，确认上述 16 个技能的名称及实际路径可发现；全局其他技能不计入该数量。
+3. 从各项目运行 `opencode debug skill`，确认上述 17 个技能的名称及实际路径可发现；全局其他技能不计入该数量。
 4. 退出并重启 OpenCode，在新会话验证项目 `AGENTS.md` 生效，再调用匹配任务的 skill。技能发现、正文加载、业务测试是三种不同验证，不能互相代替。
 5. 执行相关仓库的 `git diff --check`。规则或配置变更不等于业务构建已通过；如运行业务测试，记录实际命令、环境和结果。
 

@@ -7,7 +7,7 @@ description: 当新增或修改 React 页面、组件、状态流、路由、请
 
 ## 适用与协作
 - 先读取目标项目 `AGENTS.md`，版本、目录、命名、组件形态及 UI 库禁令以其为准。
-- 通用方法按需引用 `common/` 下的 `engineering-workflow`、`security`、`testing`、`code-review`；输出与提交参照 `dev_general_skill`。
+- 通用方法按需引用 `common/` 下的 `engineering-workflow`、`security`、`testing`、`code-review`；每次回复遵循 [output](../common/output/SKILL.md) 的前缀要求，最终回复前必须执行其 `06-output.md`，纯问答和无文件改动也适用；提交参照 `dev_general_skill`。
 
 ## 1. 核查既有模式
 - 阅读页面入口、组件树、状态来源、请求封装、样式及测试；确认 React 版本、构建脚本、类型体系和 React Compiler 配置。

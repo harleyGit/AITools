@@ -21,4 +21,4 @@ description: 当任务涉及 Go 开发、HTTP/RPC、并发、数据访问、消�
 | MLC_GO 统计投影和对账 | [statistic](statistic/SKILL.md) |
 | MLC_GO 弹幕写入、历史及实时副本 | [danmaku](danmaku/SKILL.md) |
 
-跨层任务只叠加实际涉及的专题。通用方法按任务引用 [工程实施](../common/engineering-workflow/SKILL.md)、[审查](../common/code-review/SKILL.md)、[安全](../common/security/SKILL.md)、[测试](../common/testing/SKILL.md)；交付与提交引用 [dev_general_skill](../../dev_general_skill/SKILL.md)。各专题沿用这些公共规则，不复制流程。
+跨层任务只叠加实际涉及的专题。通用方法按任务引用 [工程实施](../common/engineering-workflow/SKILL.md)、[审查](../common/code-review/SKILL.md)、[安全](../common/security/SKILL.md)、[测试](../common/testing/SKILL.md)；每次回复遵循 [output](../common/output/SKILL.md) 的前缀要求，最终回复前必须执行其 `06-output.md`，纯问答和无文件改动也适用；提交引用 [dev_general_skill](../../dev_general_skill/SKILL.md)。各专题沿用这些公共规则，不复制流程。
