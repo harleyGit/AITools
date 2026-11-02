@@ -2,8 +2,9 @@
 
 # OpenCode Token 使用量查询脚本。
 #
-# 数据来源：OpenCode 的 SQLite 数据库 message 表。每条消息的 data 字段是
-# JSON，其中包含 tokens、cost、modelID 等统计信息。脚本按消息创建时间筛选，
+# 数据来源：OpenCode 的 SQLite 数据库 message 和 session_message 表。
+# 按消息 ID 合并去重，每条消息的 data 字段是包含 tokens、cost 等信息的 JSON。
+# 脚本按消息创建时间筛选，
 # 因此查询某一天或任意日期范围时，只统计区间内真正产生的 Token。
 #
 # 兼容性：
@@ -123,8 +124,9 @@ format_token_value() {
 # 自动寻找 OpenCode 数据库，优先级从高到低如下：
 # 1. 命令行 --db 保存到 DB_PATH 的路径
 # 2. OPENCODE_DB_PATH 环境变量
-# 3. opencode db path 返回的当前数据库
-# 4. macOS/Linux 常见数据目录中的 opencode.db 或 sessions.db
+# 3. OPENCODE_DB（OpenCode 自身覆盖数据库路径的环境变量）
+# 4. opencode db path 返回的当前数据库（旧版 CLI）
+# 5. macOS/Linux 常见数据目录中的 opencode.db 或 sessions.db
 find_database() {
   local candidate
 
@@ -135,6 +137,12 @@ find_database() {
 
   if [[ -n ${OPENCODE_DB_PATH:-} ]]; then
     DB_PATH=$OPENCODE_DB_PATH
+    [[ -f "$DB_PATH" ]] || die "数据库不存在：$DB_PATH"
+    return
+  fi
+
+  if [[ -n ${OPENCODE_DB:-} ]]; then
+    DB_PATH=$OPENCODE_DB
     [[ -f "$DB_PATH" ]] || die "数据库不存在：$DB_PATH"
     return
   fi
@@ -256,8 +264,9 @@ while (($#)); do
   esac
 done
 
-# sqlite3 是唯一必需的数据库客户端。数据库位置随后按既定优先级自动发现。
+# sqlite3 用于查询，column 用于终端表格对齐。
 command -v sqlite3 >/dev/null 2>&1 || die '未安装 sqlite3'
+command -v column >/dev/null 2>&1 || die '未安装 column'
 find_database
 
 # 明确的 --start/--end 优先于自然语言位置参数；两者都没有时进入交互输入。
@@ -278,9 +287,22 @@ else
   parse_range "$expression"
 fi
 
-# 当前 OpenCode 数据结构必须包含 message 表。提前检查可给出比 SQLite 更清晰的错误。
-TABLE_EXISTS=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='message';")
-[[ "$TABLE_EXISTS" == '1' ]] || die "数据库中没有 message 表：$DB_PATH"
+# OpenCode 迁移后将新消息写入 session_message，旧 message 表可能仍保留
+# 大部分相同记录；按消息 ID 优先读取新表，再补充旧表独有的记录。
+LEGACY_TABLE_EXISTS=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='message';")
+V2_TABLE_EXISTS=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='session_message';")
+if [[ "$LEGACY_TABLE_EXISTS" == '1' && "$V2_TABLE_EXISTS" == '1' ]]; then
+  SOURCE_SQL='SELECT session_id, time_created, data FROM session_message
+    UNION ALL
+    SELECT m.session_id, m.time_created, m.data FROM message AS m
+    WHERE NOT EXISTS (SELECT 1 FROM session_message AS v WHERE v.id = m.id)'
+elif [[ "$V2_TABLE_EXISTS" == '1' ]]; then
+  SOURCE_SQL='SELECT session_id, time_created, data FROM session_message'
+elif [[ "$LEGACY_TABLE_EXISTS" == '1' ]]; then
+  SOURCE_SQL='SELECT session_id, time_created, data FROM message'
+else
+  die "数据库中没有 message 或 session_message 表：$DB_PATH"
+fi
 
 # SQL 使用左闭右开区间 [开始日 00:00, 结束日次日 00:00)，这样开始和结束
 # 日期都完整包含，同时不会误计结束日期次日零点之后的消息。
@@ -297,7 +319,7 @@ END_MS=$(( $(date_to_epoch "$END_EXCLUSIVE") * 1000 ))
 SUMMARY_SQL=$(cat <<SQL
 WITH ranged AS (
   SELECT session_id, data
-  FROM message
+  FROM ($SOURCE_SQL) AS message
   WHERE time_created >= $START_MS AND time_created < $END_MS
 ), totals AS (
   SELECT
@@ -339,14 +361,14 @@ IFS=$'\t' read -r MESSAGES SESSIONS INPUT_TOKENS OUTPUT_TOKENS CACHE_READ CACHE_
 # 仅大小写不同的模型 ID，最终保留数据库中实际记录的模型名称用于展示。
 MODEL_SQL=$(cat <<SQL
 SELECT
-  COALESCE(json_extract(data, '$.modelID'), 'unknown') AS model,
+  COALESCE(json_extract(data, '$.modelID'), json_extract(data, '$.model.id'), 'unknown') AS model,
   COUNT(*) AS messages,
   COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.input'), 0)), 0) AS input_tokens,
   COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.output'), 0)), 0) AS output_tokens,
   COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.cache.read'), 0)), 0) AS cache_read
-FROM message
+FROM ($SOURCE_SQL) AS message
 WHERE time_created >= $START_MS AND time_created < $END_MS
-  AND json_extract(data, '$.modelID') IS NOT NULL
+  AND COALESCE(json_extract(data, '$.modelID'), json_extract(data, '$.model.id')) IS NOT NULL
 GROUP BY lower(model)
 ORDER BY input_tokens + output_tokens + cache_read DESC
 LIMIT 1;
@@ -374,15 +396,17 @@ else
   DISPLAY_RANGE="${START_DATE} 至 ${END_DATE}"
 fi
 
-# 输出总览。使用制表符分隔列，终端可直接查看，也方便重定向到文本文件。
+# 输出总览。column 根据实际内容宽度对齐中文标题及数值。
 printf '\n%s Token 使用量（%s）\n\n' "$RANGE_TITLE" "$DISPLAY_RANGE"
-printf '类型\tToken 数量\n'
-printf '%s\t%s\n' '输入 Token' "$(format_token_value "$INPUT_TOKENS")"
-printf '%s\t%s\n' '输出 Token' "$(format_token_value "$OUTPUT_TOKENS")"
-printf '%s\t%s\n' '缓存读取 Token' "$(format_token_value "$CACHE_READ")"
-printf '%s\t%s\n' '缓存写入 Token' "$(format_token_value "$CACHE_WRITE")"
-printf '%s\t%s\n' '输入 + 输出' "$(format_token_value "$INPUT_OUTPUT")"
-printf '%s\t%s\n' '包含缓存读取和写入的总处理量' "$(format_token_value "$TOTAL_PROCESSED")"
+{
+  printf '类型\tToken 数量\n'
+  printf '%s\t%s\n' '输入 Token' "$(format_token_value "$INPUT_TOKENS")"
+  printf '%s\t%s\n' '输出 Token' "$(format_token_value "$OUTPUT_TOKENS")"
+  printf '%s\t%s\n' '缓存读取 Token' "$(format_token_value "$CACHE_READ")"
+  printf '%s\t%s\n' '缓存写入 Token' "$(format_token_value "$CACHE_WRITE")"
+  printf '%s\t%s\n' '输入 + 输出' "$(format_token_value "$INPUT_OUTPUT")"
+  printf '%s\t%s\n' '包含缓存读取和写入的总处理量' "$(format_token_value "$TOTAL_PROCESSED")"
+} | column -t -s $'\t'
 
 printf '\n其他数据：\n'
 printf -- '- 会话数：%s\n' "$(format_integer "$SESSIONS")"
@@ -397,31 +421,41 @@ printf -- '- 主要使用模型：%s，消息 %s，输入 %s、输出 %s、缓�
 # 每日明细使用 SQLite localtime 将 Unix 时间转换为本地自然日，避免 UTC 日期
 # 与用户所在时区的日期不一致。
 printf '\n每日明细：\n'
-printf '日期\t输入\t输出\t缓存读取\t缓存写入\t总处理量\n'
 
 DAILY_SQL=$(cat <<SQL
-SELECT
-  date(time_created / 1000, 'unixepoch', 'localtime') AS day,
-  COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.input'), 0)), 0) AS input_tokens,
-  COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.output'), 0)), 0) AS output_tokens,
-  COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.cache.read'), 0)), 0) AS cache_read,
-  COALESCE(SUM(COALESCE(json_extract(data, '$.tokens.cache.write'), 0)), 0) AS cache_write
-FROM message
+SELECT date(time_created / 1000, 'unixepoch', 'localtime') AS day,
+  SUM(COALESCE(json_extract(data, '$.tokens.input'), 0)),
+  SUM(COALESCE(json_extract(data, '$.tokens.output'), 0)),
+  SUM(COALESCE(json_extract(data, '$.tokens.cache.read'), 0)),
+  SUM(COALESCE(json_extract(data, '$.tokens.cache.write'), 0))
+FROM ($SOURCE_SQL) AS message
 WHERE time_created >= $START_MS AND time_created < $END_MS
-GROUP BY day
-ORDER BY day;
+GROUP BY 1
+ORDER BY 1;
 SQL
 )
 
-while IFS=$'\t' read -r DAY DAY_INPUT DAY_OUTPUT DAY_CACHE_READ DAY_CACHE_WRITE; do
-  [[ -n "$DAY" ]] || continue
-  DAY_TOTAL=$((DAY_INPUT + DAY_OUTPUT + DAY_CACHE_READ + DAY_CACHE_WRITE))
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$DAY" \
-    "$(format_integer "$DAY_INPUT")" "$(format_integer "$DAY_OUTPUT")" \
-    "$(format_integer "$DAY_CACHE_READ")" "$(format_integer "$DAY_CACHE_WRITE")" \
-    "$(format_integer "$DAY_TOTAL")"
-done < <(sqlite3 -separator $'\t' "$DB_PATH" "$DAILY_SQL")
+DAILY_ROWS=$(sqlite3 -separator $'\t' "$DB_PATH" "$DAILY_SQL")
+{
+  printf '日期\t输入\t输出\t缓存读取\t缓存写入\t总处理量\n'
+  while IFS=$'\t' read -r DAY DAY_INPUT DAY_OUTPUT DAY_CACHE_READ DAY_CACHE_WRITE; do
+    [[ -n "$DAY" ]] || continue
+    DAY_TOTAL=$((DAY_INPUT + DAY_OUTPUT + DAY_CACHE_READ + DAY_CACHE_WRITE))
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$DAY" \
+      "$(format_integer "$DAY_INPUT")" "$(format_integer "$DAY_OUTPUT")" \
+      "$(format_integer "$DAY_CACHE_READ")" "$(format_integer "$DAY_CACHE_WRITE")" \
+      "$(format_integer "$DAY_TOTAL")"
+  done <<<"$DAILY_ROWS"
+} | column -t -s $'\t'
+printf '\n总使用 Token：%s\n' \
+  "$(format_token_value "$TOTAL_PROCESSED")"
 
 # 最后显示实际读取的数据库和统计口径，便于核对多版本或多目录安装情况。
+LATEST_MESSAGE=$(sqlite3 "$DB_PATH" \
+  "SELECT COALESCE(datetime(MAX(time_created) / 1000, 'unixepoch', 'localtime'), '无') FROM ($SOURCE_SQL) AS message;")
+printf '\n数据库最新消息：%s\n' "$LATEST_MESSAGE"
+if [[ "$LATEST_MESSAGE" == '无' || "${LATEST_MESSAGE:0:10}" < "$END_DATE" ]]; then
+  printf '%s\n' '注意：数据库最新消息早于查询结束日；无记录不代表实际用量为 0，请核对实际使用的 OpenCode 数据库。'
+fi
 printf '\n统计数据库：%s\n' "$DB_PATH"
-printf '统计口径：按消息创建时间计算区间内实际产生的 Token；起止日期均包含。\n'
+printf '统计口径：按消息 ID 合并新旧消息表并去重；按消息创建时间统计所有模型和提供方的 Token（含缓存读取及写入）；起止日期均包含。\n'

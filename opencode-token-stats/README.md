@@ -2,16 +2,9 @@
 
 通过 Shell 脚本查询 OpenCode 在某一天、最近若干天或指定日期范围内实际产生的 Token，并输出中文汇总、主要模型和每日明细。
 
-脚本位置：
-
-```text
-/Users/huanggang/HGFiles/Code/GitHub/AISkills/opencode-token-stats/opencode_token_stats.sh
-```
-
 ## 快速开始
 
 ```bash
-cd /Users/huanggang/HGFiles/Code/GitHub/AISkills/opencode-token-stats
 ./opencode_token_stats.sh "最近一周"
 ```
 
@@ -25,33 +18,31 @@ cd /Users/huanggang/HGFiles/Code/GitHub/AISkills/opencode-token-stats
 
 - macOS 或支持 GNU `date` 的系统
 - `sqlite3`
+- `column`（用于终端表格对齐）
 - OpenCode CLI，或可直接访问 OpenCode SQLite 数据库
 
 检查依赖：
 
 ```bash
 command -v sqlite3
+command -v column
 command -v opencode
-opencode db path
 ```
 
 脚本按以下顺序查找数据库：
 
 1. `--db PATH`
 2. 环境变量 `OPENCODE_DB_PATH`
-3. `opencode db path`
-4. `~/.local/share/opencode/opencode.db`
-5. `~/Library/Application Support/opencode/opencode.db`
+3. OpenCode 使用的环境变量 `OPENCODE_DB`
+4. `opencode db path`（当前 CLI 不支持此命令时自动继续查找）
+5. `~/.local/share/opencode/opencode.db`
+6. `~/Library/Application Support/opencode/opencode.db`
 
 如果数据库不在默认位置，可以通过 `--db` 或 `OPENCODE_DB_PATH` 指定。
 
 ## 使用方法
 
-进入脚本目录：
-
-```bash
-cd /Users/huanggang/HGFiles/Code/GitHub/AISkills/opencode-token-stats
-```
+在脚本所在目录执行以下命令：
 
 查询最近一周，包含今天在内的最近 7 个自然日：
 
@@ -150,7 +141,9 @@ OPENCODE_DB_PATH="$HOME/.local/share/opencode/opencode.db" \
 - 每个会话的平均 Token 与中位数
 - 记录成本
 - 主要使用模型及其 Token
-- 按自然日拆分的 Token 明细
+- 按自然日拆分的 Token 明细（只列有消息记录的日期）
+- 查询时间范围的总使用 Token（含缓存读取及写入）
+- 数据库最新消息时间，便于判断数据是否覆盖查询范围
 
 ## 输出示例
 
@@ -176,7 +169,7 @@ OPENCODE_DB_PATH="$HOME/.local/share/opencode/opencode.db" \
 
 ## 统计口径
 
-统计按 `message.time_created` 的本地时间筛选消息，并从消息 JSON 的以下字段聚合：
+OpenCode 迁移前后的消息分别存于 `message` 与 `session_message`。脚本优先读取新表，再补充旧表独有的消息，按消息 ID 去重，避免迁移期间重复统计。统计按消息 `time_created` 的本地时间筛选，并从消息 JSON 的以下字段聚合：
 
 | JSON 字段 | 含义 |
 |---|---|
@@ -185,7 +178,7 @@ OPENCODE_DB_PATH="$HOME/.local/share/opencode/opencode.db" \
 | `$.tokens.cache.read` | 缓存读取 Token |
 | `$.tokens.cache.write` | 缓存写入 Token |
 | `$.cost` | 消息记录成本 |
-| `$.modelID` | 使用模型 |
+| `$.modelID` 或 `$.model.id` | 使用模型 |
 
 时间范围使用左闭右开区间。例如查询 `2026-07-18 至 2026-07-24`，实际范围是：
 
@@ -206,6 +199,10 @@ OPENCODE_DB_PATH="$HOME/.local/share/opencode/opencode.db" \
 
 会话平均值和中位数均基于查询区间内每个会话实际产生的总处理量。
 
+总览汇总数据库中所有模型和提供方的消息，并包含缓存读取及写入；末尾的“总使用 Token”与总览中的“包含缓存读取和写入的总处理量”相同。**总处理量不是订阅额度或非缓存消耗量**。无法仅凭这些记录还原各账号的额度或剩余量。
+
+每日明细不展示没有消息记录的日期。如果数据库最新消息早于查询结束日，请检查当前 OpenCode 实际使用的数据库、其他客户端或设备的数据来源；本脚本只统计所选本地数据库，不从账号服务同步历史记录。
+
 ## 运行测试
 
 ```bash
@@ -224,10 +221,10 @@ bash -n opencode_token_stats.sh test_token_stats.sh
 
 ### 未找到数据库
 
-先查看 OpenCode 当前数据库路径：
+先查看脚本输出末尾的统计数据库路径；常见位置为：
 
 ```bash
-opencode db path
+ls -l "$HOME/.local/share/opencode/opencode.db"
 ```
 
 再明确指定：
@@ -236,12 +233,12 @@ opencode db path
 ./opencode_token_stats.sh --db "/实际路径/opencode.db" "最近一周"
 ```
 
-### 数据库中没有 message 表
+### 数据库中没有 message 或 session_message 表
 
 说明指定的 SQLite 文件不是当前脚本支持的 OpenCode 数据库，或者 OpenCode 数据结构发生了变化。可以执行以下命令检查：
 
 ```bash
-sqlite3 "$(opencode db path)" '.tables'
+sqlite3 "$HOME/.local/share/opencode/opencode.db" '.tables'
 ```
 
 ### 查询结果为 0
@@ -250,7 +247,7 @@ sqlite3 "$(opencode db path)" '.tables'
 
 - 查询日期是否正确
 - 实际读取的数据库路径是否正确
-- OpenCode 是否在该时间范围内产生过消息
+- OpenCode 是否在该时间范围内向所选数据库写入过消息（对照报表中的数据库最新消息时间）
 - 系统时区是否与预期一致
 
 脚本输出末尾会显示实际使用的数据库路径和统计口径。
