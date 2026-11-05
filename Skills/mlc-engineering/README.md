@@ -37,10 +37,11 @@ mlc-engineering/
 │   ├── statistic/SKILL.md
 │   └── danmaku/SKILL.md
 ├── react/SKILL.md
-└── ios/SKILL.md
+├── ios/SKILL.md
+└── theme-color/SKILL.md
 ```
 
-共 17 个技能，`name` 与所在末级目录相同且在本目录唯一。`statistic`、`danmaku` 仅用于 MLC_GO 对应业务；其他技能遵循自身任务触发描述。HTTP 接口方法统一归 `api`，统计统一归 `statistic`，不建立重复 `http`、`static` 或第二份 ClickHouse 技能。
+共 18 个技能，`name` 与所在末级目录相同且在本目录唯一。`statistic`、`danmaku` 仅用于 MLC_GO 对应业务；其他技能遵循自身任务触发描述。HTTP 接口方法统一归 `api`，统计统一归 `statistic`，不建立重复 `http`、`static` 或第二份 ClickHouse 技能。
 
 ## OpenCode 配置
 
