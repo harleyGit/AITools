@@ -17,8 +17,10 @@ description: 当任务涉及 Go HTTP 或 RPC 接口开发、请求校验、响�
 
 ## 接口注册与 API Guard 同步（必查）
 - 每次新增接口，必须同时核对业务路由注册和 API Guard 接口规则；修改路径、HTTP 方法、版本或鉴权要求时也必须同步更新，不能仅添加 handler 或路由。
-- 在 MLC_GO 中，检查 `internal/pkg/hg_router/` 中对应模块路由，以及 `internal/pkg/server/hg_router_rules.go` 中对应的 `*MethodRules()`。确保 Path、Version、Methods、NeedAuth 和权限要求与路由契约一致；Guard 路径以实际 `StripPrefix` 后的模块内路径为准。
-- 典型遗漏：`GET /api/v1/video_upload/detail` 已注册，但 `VideoUploadMethodRules()` 未登记 `GET /detail`，会在进入 handler 前返回 `404 interface not found`。此时先检查规则匹配，不要误判为详情数据缺失。
+- MLC_GO 新路由以 `internal/pkg/hg_router/` 的 `RouteSpec` 为统一声明源：同一声明生成 HTTP 绑定、路由目录与 Guard 规则。确保 Method、SubPath、Version、NeedAuth、Permissions、PermissionMatch 和 Handler 一致；Guard 路径以实际 `StripPrefix` 后的模块内路径为准。同一路径可有 GET/POST 等不同方法，排障时必须确认实际方法，不能只看 URL。
+- `RouteSpec.Permissions` 声明 JWT 后检查的 IAM 全局权限，使用 `internal/pkg/permission` 的已知枚举；默认 all，只有明确共享的读入口才使用 any。路由 IAM 不能替代 service/repository 的商家资格、对象归属、资源状态、自审限制或租户边界，超级管理员也不自动获得业务主体身份。
+- 授权只信任 JWT 身份和服务端 IAM/业务数据，不接受 `X-Role`、请求体 userID 或客户端权限列表。缺少 authorizer/权限服务故障返回 503，不伪装成 403；缺少权限返回 403，并通过集中错误构造说明所需 IAM 权限及“由生效角色授予”，但不泄露当前用户绑定、资源所有者或资源是否存在。
+- 典型遗漏：新增 handler 却未加入模块 `RouteSpec`、同一路径选错 GET/POST、权限枚举与 IAM 三段编码不一致，都会在进入业务或权限判断时出现 404/403。此时先核对路由目录和实际 Method，再检查 IAM 与业务资格，不要把协议层失败误判为数据缺失。
 - 新增或修改接口时，补充或复用路由目录与 Guard 规则一致性测试，并通过真实路由组及根入口相同的 `StripPrefix` 链验证；仅直接调用 handler 的测试不能覆盖此类问题。
 - 验证区分路由可达、鉴权通过与业务成功：缺少公共请求头、签名或 JWT 时，应按既有协议返回对应校验错误，不能为消除404关闭鉴权。涉及前端代理时还需核对实际代理 URL；未携带有效登录会话验证成功响应，不得宣称完整接口或浏览器验收通过。
 

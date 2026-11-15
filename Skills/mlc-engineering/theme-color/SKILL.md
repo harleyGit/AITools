@@ -5,7 +5,7 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 # React Web 统一主题色设计规范（生产工程版）
 
-根据你提供的全部颜色，我建议最终采用 冰川科技蓝为主色、明媚电光蓝为强调色、晴空科技蓝为辅助色、星云蓝紫为 AI 专属色、深海蓝为深色模式基础色。
+最终采用晴空科技蓝为主色、明媚电光蓝为强调色、星云蓝紫为 AI 专属色；深色模式以现有暗蓝文字色构建背景，避免浅色背景与浅色文字混用。
 
 整体设计目标：
 
@@ -13,9 +13,9 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 ## 一、最终保留的核心色彩
 
-冰川科技蓝
+冰川科技蓝（已统一为晴空科技蓝）
 
-\#4294E0
+\#438BFA
 
 全站主品牌色 · 第一优先
 
@@ -37,11 +37,11 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 AI · 智能推荐 · 创新
 
-深海智能蓝
+冰海浅蓝
 
-\#1A3B66
+\#89C8FF
 
-深色模式 · 企业级容器
+柔和点缀；深色容器另用已有暗蓝色
 
 冰川浅蓝
 
@@ -55,7 +55,7 @@ AI · 智能推荐 · 创新
 
 ### 中信红色系（场景内优先使用）
 
-全站主品牌色仍为冰川科技蓝；涉及价格、金额、上涨行情、警示、活动及相关操作按钮时，优先从以下红色系中按语义选色，不要用蓝色代替这些场景色。色值保留原始 HEX，不把近似红合并为同一种颜色。
+全站主品牌色仍为晴空科技蓝；涉及价格、金额、上涨行情、警示、活动及相关操作按钮时，优先从以下红色系中按语义选色，不要用蓝色代替这些场景色。色值保留原始 HEX，不把近似红合并为同一种颜色。
 
 | 颜色名称 | HEX | 建议用途 / 主题 token |
 | --- | --- | --- |
@@ -70,7 +70,11 @@ AI · 智能推荐 · 创新
 | 价格 / 金额 / 警示红 | `#E83E36` | 价格、金额和警示文字；`priceRed` |
 | 上证指数红 | `#D65E53` | 指数上涨数字及标签；`indexRiseRed` |
 
-React 工程通过 `HGThemeUtils.getCssVar(token)` 或 `var(--hg-color-...)` 引用对应 token，不在业务组件里重复写 HEX。红色按钮的白字、红色文字在背景上的对比度需按字号与明暗主题分别校验；浅红色不直接承担小字号白字，危险操作仍需明确的语义和确认机制。避免把红色用于成功状态、普通导航或所有按钮，以保留价格与警示的辨识度。
+React 工程优先通过 `HGThemeUtils.getCssVar(token)` 获取当前全局 CSS 变量名，不在业务组件里重复写 HEX。预览容器里的 `--color-*` 不一定与全局变量同名；例如 `priceRed` 对应全局 `--hg-color-price-red`，`warning` 对应全局 `--color-warning`。以下十个中信红色值保持原值，不合并近似红：
+
+- 价格、金额、重点提示优先 `priceRed`；上涨 K 线与指数分别用 `kLineRed`、`indexRiseRed`，不要混为一色。
+- 警告、错误与危险操作优先在 `warning` / `danger` 语义 token 中选用中信红；普通信息提示仍可用蓝色，成功状态不涂红。红色主题背景用 `zhongxinBackgroundRed`，强调图标用 `zhongxinAccentRed`。
+- 活动展示用 `zhongxinBrandRed`，需要白色小字的按钮优先 `buttonRedStrong`；其余 `buttonRed`、`buttonRedSoft`、`buttonRedBright` 按交互强度选择。逐项核对背景与文字对比度，危险动作仍需明确的确认语义。
 
 ## 二、统一颜色使用规则
 
@@ -78,27 +82,27 @@ React 工程通过 `HGThemeUtils.getCssVar(token)` 或 `var(--hg-color-...)` 引
 | --------------- | --------- | --------------- |
 | 页面背景            | `#F0F7FF` | 全站统一            |
 | 卡片、Modal、Drawer | `#FFFFFF` | 白色容器            |
-| 主按钮 Primary     | `#2674C7` | Hover `#195FA8` |
-| 主品牌色 / Logo     | `#4294E0` | 品牌展示            |
+| 主按钮 Primary     | `#438BFA` | Hover `#2674E8` |
+| 主品牌色 / Logo     | `#438BFA` | 品牌展示            |
 | 次级蓝色按钮          | `#438BFA` | Hover `#2674E8` |
-| AI 生成按钮         | `#176D9B` | Hover `#10577E` |
+| AI 生成按钮         | `#6569D8` | Hover `#565AC4` |
 | AI 动效 / 高光      | `#28B4F5` | 少量使用            |
 | AI 推荐模块         | `#8185F4` | 配浅紫背景           |
 | 价格 / 金额 / 警示文字 | `#E83E36` | 优先红色语义 token，校验对比度 |
 | 上涨 K 线 / 指数     | `#C53225` / `#D65E53` | 按图表和数字场景区分 |
 | 活动 / 红色场景按钮   | `#EA494A` / `#DA332A` | 品牌展示与可读按钮分别选用 |
-| 导航选中            | `#4294E0` | 浅蓝背景 + 深蓝文字     |
-| 普通链接            | `#2166AE` | Hover `#19518E` |
-| 输入框 Focus       | `#4294E0` | 浅蓝聚焦光环          |
-| Switch 开启       | `#4294E0` | 电光蓝可用于动态点缀      |
+| 导航选中            | `#438BFA` | 浅蓝背景 + 深蓝文字     |
+| 普通链接            | `#438BFA` | Hover `#2674E8` |
+| 输入框 Focus       | `#438BFA` | 浅蓝聚焦光环          |
+| Switch 开启       | `#438BFA` | 电光蓝可用于动态点缀      |
 | 进度条             | `#28B4F5` | 轨道使用浅蓝          |
 | 表格选中行           | `#EAF4FF` | Hover `#F2F8FF` |
 | 成功 / 警告 / 错误    | 独立语义色     | 不用蓝色代替          |
-| 深色侧边栏           | `#1A3B66` | 白色文字            |
+| 深色侧边栏           | `#0F2440` | 浅色文字            |
 | 正文文字            | `#172B4D` | 保证可读性           |
 | 边框 / 分割线        | `#D6E7F9` | 低对比度            |
 
-这里有一个重要的工程设计原则：品牌色不一定等于按钮背景色。 `#4294E0`、`#28B4F5` 很漂亮，但配白色小字时对比度不足。因此在生产环境中，保留原色用于品牌、图标、光效，另设深一档的交互色用于白字按钮。
+品牌亮蓝与电光蓝配白色小字的对比度可能不足；按钮文字应使用现有暗色 `#0F2440`，或按场景选择深一档的已有蓝紫色并验证对比度。
 
 ## 三、React 工程推荐目录结构
 
@@ -135,11 +139,11 @@ src/
   color-scheme: light;
 
   /* ===== 1. 品牌基础色 ===== */
-  --brand-glacier: #4294E0;
+  --brand-glacier: #438BFA;
   --brand-electric: #28B4F5;
   --brand-sky: #438BFA;
   --brand-nebula: #8185F4;
-  --brand-ocean: #1A3B66;
+  --brand-ocean: #89C8FF;
 
   /* ===== 2. 柔和辅助色 ===== */
   --brand-ice: #89C8FF;
@@ -147,9 +151,9 @@ src/
   --brand-frost: #CFF0FF;
 
   /* ===== 3. 主交互 ===== */
-  --color-primary: #2674C7;
-  --color-primary-hover: #195FA8;
-  --color-primary-active: #124B86;
+  --color-primary: #438BFA;
+  --color-primary-hover: #2674E8;
+  --color-primary-active: #28B4F5;
   --color-primary-soft: #EAF4FF;
 
   /* ===== 4. 次级交互 ===== */
@@ -161,8 +165,8 @@ src/
   --color-accent: #28B4F5;
   --color-accent-hover: #17A2E0;
   --color-accent-soft: #E6F8FF;
-  --color-accent-action: #176D9B;
-  --color-accent-action-hover: #10577E;
+  --color-accent-action: #6569D8;
+  --color-accent-action-hover: #565AC4;
 
   /* ===== 6. AI 专属 ===== */
   --color-ai: #8185F4;
@@ -184,39 +188,51 @@ src/
   --color-text-secondary: #61758E;
   --color-text-muted: #71849B;
   --color-text-inverse: #FFFFFF;
-  --color-link: #2166AE;
-  --color-link-hover: #19518E;
+  --color-link: #438BFA;
+  --color-link-hover: #2674E8;
 
   /* ===== 9. 边框 ===== */
   --color-border: #D6E7F9;
   --color-border-strong: #B5D0ED;
-  --color-border-focus: #4294E0;
+  --color-border-focus: #438BFA;
 
   /* ===== 10. 状态语义 ===== */
   --color-success: #16835D;
   --color-success-soft: #E8F8F0;
-  --color-warning: #AD6800;
-  --color-warning-soft: #FFF7E6;
-  --color-danger: #C9364B;
+  --color-warning: #C53225;
+  --color-warning-soft: #FFF0F2;
+  --color-danger: #DA332A;
   --color-danger-soft: #FFF0F2;
-  --color-info: #2674C7;
+  --color-info: #438BFA;
   --color-info-soft: #EAF4FF;
 
   /* ===== 11. 深海色 ===== */
-  --color-ocean: #1A3B66;
-  --color-ocean-hover: #20487C;
-  --color-ocean-border: #274C80;
+  --color-ocean: #89C8FF;
+  --color-ocean-hover: #565AC4;
+  --color-ocean-border: #8185F4;
 
-  /* ===== 12. 渐变 ===== */
+  /* ===== 12. 中信红原值：按语义选用，不与状态色合并 ===== */
+  --color-zhongxin-brand-red: #EA494A;
+  --color-zhongxin-background-red: #E8423A;
+  --color-zhongxin-accent-red: #EC6767;
+  --color-k-line-red: #C53225;
+  --color-button-red: #E64642;
+  --color-button-red-strong: #DA332A;
+  --color-button-red-soft: #EB5B55;
+  --color-button-red-bright: #E84038;
+  --color-price-red: #E83E36;
+  --color-index-rise-red: #D65E53;
+
+  /* ===== 13. 渐变 ===== */
   --gradient-brand: linear-gradient(
     120deg,
-    #4294E0 0%,
+    #438BFA 0%,
     #28B4F5 55%,
     #8185F4 100%
   );
 
   --gradient-ai: linear-gradient(
-    120deg,
+    135deg,
     #438BFA 0%,
     #8185F4 100%
   );
@@ -228,20 +244,20 @@ src/
     #F0F0FF 100%
   );
 
-  /* ===== 13. 视觉系统 ===== */
+  /* ===== 14. 视觉系统 ===== */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
 
   --shadow-card:
-    0 4px 18px rgb(26 59 102 / 6%);
+    0 4px 18px rgb(23 43 77 / 6%);
 
   --shadow-popover:
-    0 12px 32px rgb(26 59 102 / 12%);
+    0 12px 32px rgb(23 43 77 / 12%);
 
   --focus-ring:
-    0 0 0 3px rgb(66 148 224 / 22%);
+    0 0 0 3px rgb(67 139 250 / 22%);
 
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
@@ -255,51 +271,51 @@ src/
   --color-primary: #89C8FF;
   --color-primary-hover: #A5D5FF;
   --color-primary-active: #5FA8FF;
-  --color-primary-soft: #203F61;
+  --color-primary-soft: #172B4D;
 
   --color-secondary: #8DAEFF;
   --color-secondary-hover: #A7C2FF;
-  --color-secondary-soft: #24395E;
+  --color-secondary-soft: #172B4D;
 
   --color-accent: #50C8FA;
   --color-accent-hover: #82DAFF;
-  --color-accent-soft: #173F57;
+  --color-accent-soft: #0F2440;
   --color-accent-action: #50C8FA;
   --color-accent-action-hover: #82DAFF;
 
   --color-ai: #AAA8FF;
   --color-ai-hover: #C1BEFF;
-  --color-ai-soft: #302D58;
+  --color-ai-soft: #172B4D;
   --color-ai-action: #AAA8FF;
 
-  --color-bg-page: #0E1D30;
-  --color-bg-surface: #1A3B66;
-  --color-bg-subtle: #162E4C;
-  --color-bg-hover: #244A76;
-  --color-bg-selected: #244F7E;
-  --color-bg-disabled: #26394F;
+  --color-bg-page: #0F2440;
+  --color-bg-surface: #172B4D;
+  --color-bg-subtle: #0F2440;
+  --color-bg-hover: #61758E;
+  --color-bg-selected: #65D9A4;
+  --color-bg-disabled: #61758E;
 
   --color-text: #E0EDFB;
   --color-text-title: #F4F8FF;
   --color-text-secondary: #B8CBE1;
   --color-text-muted: #A8BCD4;
-  --color-text-inverse: #10243C;
+  --color-text-inverse: #0F2440;
 
   --color-link: #89C8FF;
   --color-link-hover: #B1DDFF;
 
-  --color-border: #35577F;
-  --color-border-strong: #4D7199;
+  --color-border: #89C8FF;
+  --color-border-strong: #B5D0ED;
   --color-border-focus: #89C8FF;
 
   --color-success: #65D9A4;
-  --color-success-soft: #173F37;
+  --color-success-soft: #89C8FF;
   --color-warning: #FFD078;
-  --color-warning-soft: #463920;
+  --color-warning-soft: #B1DDFF;
   --color-danger: #FF8D9B;
-  --color-danger-soft: #4A293A;
+  --color-danger-soft: #B8CBE1;
   --color-info: #89C8FF;
-  --color-info-soft: #203F61;
+  --color-info-soft: #172B4D;
 
   --shadow-card:
     0 4px 18px rgb(0 0 0 / 18%);
@@ -366,7 +382,7 @@ src/
 
 /* 主按钮 */
 .hg-button--primary {
-  color: #FFFFFF;
+  color: var(--color-text-title);
   background: var(--color-primary);
 }
 
@@ -400,7 +416,7 @@ src/
 
 /* 电光行动按钮 */
 .hg-button--accent {
-  color: #FFFFFF;
+  color: var(--color-text-inverse);
   background: var(--color-accent-action);
 }
 
@@ -530,7 +546,7 @@ src/
   transition: width var(--transition-normal);
 }
 
-/* 深色模式下按钮反转文字色 */
+/* 深色模式的亮色按钮改用深字，避免浅字叠加浅蓝底。 */
 [data-theme="dark"] .hg-button--primary,
 [data-theme="dark"] .hg-button--ai,
 [data-theme="dark"] .hg-button--accent {
@@ -768,13 +784,13 @@ export default function HGAntdThemeProvider({ children }) {
           : antdTheme.defaultAlgorithm,
 
         token: {
-          colorPrimary: isDark ? "#89C8FF" : "#2674C7",
-          colorInfo: isDark ? "#89C8FF" : "#2674C7",
+          colorPrimary: isDark ? "#89C8FF" : "#438BFA",
+          colorInfo: isDark ? "#89C8FF" : "#438BFA",
           colorSuccess: isDark ? "#65D9A4" : "#16835D",
-          colorWarning: isDark ? "#FFD078" : "#AD6800",
-          colorError: isDark ? "#FF8D9B" : "#C9364B",
+          colorWarning: isDark ? "#FFD078" : "#C53225",
+          colorError: isDark ? "#FF8D9B" : "#DA332A",
 
-          colorBgBase: isDark ? "#0E1D30" : "#FFFFFF",
+          colorBgBase: isDark ? "#0F2440" : "#FFFFFF",
           colorTextBase: isDark ? "#E0EDFB" : "#172B4D",
 
           borderRadius: 10,
@@ -793,10 +809,10 @@ export default function HGAntdThemeProvider({ children }) {
           Input: {
             activeShadow: isDark
               ? "0 0 0 3px rgb(137 200 255 / 30%)"
-              : "0 0 0 3px rgb(66 148 224 / 22%)",
+              : "0 0 0 3px rgb(67 139 250 / 22%)",
           },
           Table: {
-            headerBg: isDark ? "#162E4C" : "#F6FAFF",
+            headerBg: isDark ? "#172B4D" : "#F6FAFF",
           },
         },
       }}
@@ -808,7 +824,7 @@ export default function HGAntdThemeProvider({ children }) {
 
 ```
 
-在应用根组件中，将 `HGAntdThemeProvider` 放在 `ThemeProvider` 内部即可。这里的 Ant Design `colorPrimary` 使用更深的交互蓝，以保证主按钮的白字可读性。对于 ProLayout，还需要将其主题配置与 `resolvedTheme` 同步，避免侧边栏和内容区使用不同的明暗模式。
+在应用根组件中，将 `HGAntdThemeProvider` 放在 `ThemeProvider` 内部即可。亮蓝按钮的小字不能默认使用白色，需按实际字号校验对比度并采用现有深色文字；对于 ProLayout，还需要将其主题配置与 `resolvedTheme` 同步。
 
 ## 五、组件颜色效果预览
 
@@ -845,7 +861,7 @@ AI 智能
 ## 六、生产工程需要遵守的 5 条规则
 
 1. 组件不直接写品牌 HEX。 业务组件使用 `var(--color-primary)` 等语义变量，避免后续换肤时全工程修改。
-2. 全站只有一套主交互体系。 冰川科技蓝负责品牌，深一档蓝负责按钮；电光蓝只用于特殊动作和动效，避免按钮层级混乱。
+2. 全站只有一套主交互体系。晴空科技蓝负责品牌和主交互，电光蓝只用于特殊动作和动效，亮色按钮搭配深色文字。
 3. AI 模块统一使用星云蓝紫。 AI 图标、智能推荐、AI 卡片采用紫色，必要时使用蓝紫渐变，形成独立识别体系。
 4. 深色模式必须单独校验。 特别是按钮 hover、disabled、文字对比度、表格、弹窗和图表；不要直接反转颜色。
 5. CSS 变量是唯一颜色来源。 Ant Design 的主题 Token、业务组件 CSS 和图表颜色配置都应从统一的主题配置映射，避免维护多套不一致的色值。
