@@ -77,10 +77,23 @@ shift_date() {
   fi
 }
 
-# 给整数添加千位分隔符，便于阅读大 Token 数值。
-# 例如：1239079 -> 1,239,079。
-format_integer() {
-  awk -v number="${1:-0}" 'BEGIN {
+# 统一格式化统计数字：大于一万时换算为“万”并保留三位小数，否则添加千位
+# 分隔符。已经以“万”结尾的文本保持原样，避免重复换算。
+# 例如：1239079 -> 123.908 万，10000 -> 10,000。
+format_number() {
+  local number=${1:-0}
+
+  if [[ "$number" =~ 万[[:space:]]*$ ]]; then
+    printf '%s' "$number"
+    return
+  fi
+
+  awk -v number="$number" 'BEGIN {
+    if (number > 10000) {
+      printf "%.3f 万", number / 10000
+      exit
+    }
+
     number = sprintf("%.0f", number)
     sign = ""
     if (number ~ /^-/) {
@@ -96,29 +109,9 @@ format_integer() {
   }'
 }
 
-# 将较大数值换算成中文近似单位。精确值仍会保留，此函数只生成辅助说明。
-# 例如：1035334 -> 约 103.53 万。
-format_approx() {
-  awk -v number="${1:-0}" 'BEGIN {
-    if (number >= 100000000) printf "约 %.2f 亿", number / 100000000
-    else if (number >= 10000) printf "约 %.2f 万", number / 10000
-    else printf "%d", number
-  }'
-}
-
-# Token 少于一万时只显示精确值；达到一万后同时显示精确值和中文近似值。
+# Token 与其他统计数字使用相同的单位和精度规则。
 format_token_value() {
-  local number=${1:-0}
-  local exact
-  local approximate
-
-  exact=$(format_integer "$number")
-  approximate=$(format_approx "$number")
-  if (( number >= 10000 )); then
-    printf '%s（%s）' "$exact" "$approximate"
-  else
-    printf '%s' "$exact"
-  fi
+  format_number "${1:-0}"
 }
 
 # 自动寻找 OpenCode 数据库，优先级从高到低如下：
@@ -409,13 +402,13 @@ printf '\n%s Token 使用量（%s）\n\n' "$RANGE_TITLE" "$DISPLAY_RANGE"
 } | column -t -s $'\t'
 
 printf '\n其他数据：\n'
-printf -- '- 会话数：%s\n' "$(format_integer "$SESSIONS")"
-printf -- '- 消息数：%s\n' "$(format_integer "$MESSAGES")"
+printf -- '- 会话数：%s\n' "$(format_number "$SESSIONS")"
+printf -- '- 消息数：%s\n' "$(format_number "$MESSAGES")"
 printf -- '- 平均每个会话：%s Token，包含缓存读取和写入\n' "$(format_token_value "$AVG_TOKENS")"
 printf -- '- Token 中位数：%s/会话\n' "$(format_token_value "$MEDIAN_TOKENS")"
 printf -- '- 记录成本：$%.2f\n' "$COST"
 printf -- '- 主要使用模型：%s，消息 %s，输入 %s、输出 %s、缓存读取 %s\n' \
-  "$MAIN_MODEL" "$(format_integer "$MODEL_MESSAGES")" "$(format_token_value "$MODEL_INPUT")" \
+  "$MAIN_MODEL" "$(format_number "$MODEL_MESSAGES")" "$(format_token_value "$MODEL_INPUT")" \
   "$(format_token_value "$MODEL_OUTPUT")" "$(format_token_value "$MODEL_CACHE_READ")"
 
 # 每日明细使用 SQLite localtime 将 Unix 时间转换为本地自然日，避免 UTC 日期
@@ -442,9 +435,9 @@ DAILY_ROWS=$(sqlite3 -separator $'\t' "$DB_PATH" "$DAILY_SQL")
     [[ -n "$DAY" ]] || continue
     DAY_TOTAL=$((DAY_INPUT + DAY_OUTPUT + DAY_CACHE_READ + DAY_CACHE_WRITE))
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$DAY" \
-      "$(format_integer "$DAY_INPUT")" "$(format_integer "$DAY_OUTPUT")" \
-      "$(format_integer "$DAY_CACHE_READ")" "$(format_integer "$DAY_CACHE_WRITE")" \
-      "$(format_integer "$DAY_TOTAL")"
+      "$(format_number "$DAY_INPUT")" "$(format_number "$DAY_OUTPUT")" \
+      "$(format_number "$DAY_CACHE_READ")" "$(format_number "$DAY_CACHE_WRITE")" \
+      "$(format_number "$DAY_TOTAL")"
   done <<<"$DAILY_ROWS"
 } | column -t -s $'\t'
 printf '\n总使用 Token：%s\n' \

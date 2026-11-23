@@ -5,7 +5,7 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 # React Web 统一主题色设计规范（生产工程版）
 
-最终采用晴空科技蓝为主色、明媚电光蓝为强调色、星云蓝紫为 AI 专属色；深色模式以现有暗蓝文字色构建背景，避免浅色背景与浅色文字混用。
+最终采用保存按钮蓝 `#1677FF` 为主色、明媚电光蓝为强调色、星云蓝紫为 AI 专属色；深色模式以现有暗蓝文字色构建背景，避免浅色背景与浅色文字混用。
 
 整体设计目标：
 
@@ -13,9 +13,9 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 ## 一、最终保留的核心色彩
 
-冰川科技蓝（已统一为晴空科技蓝）
+主按钮蓝
 
-\#438BFA
+\#1677FF
 
 全站主品牌色 · 第一优先
 
@@ -25,9 +25,9 @@ description: 当进行 Web 或 iOS UI、主题、组件配色、颜色 token、�
 
 强动作 · 动态 · 科技高光
 
-晴空科技蓝
+科技蓝（与主按钮同色）
 
-\#438BFA
+\#1677FF
 
 品牌展示 · 活动 · 运营
 
@@ -55,7 +55,7 @@ AI · 智能推荐 · 创新
 
 ### 中信红色系（场景内优先使用）
 
-全站主品牌色仍为晴空科技蓝；涉及价格、金额、上涨行情、警示、活动及相关操作按钮时，优先从以下红色系中按语义选色，不要用蓝色代替这些场景色。色值保留原始 HEX，不把近似红合并为同一种颜色。
+全站主品牌色为保存按钮蓝；涉及价格、金额、上涨行情、警示、活动及相关操作按钮时，优先从以下红色系中按语义选色，不要用蓝色代替这些场景色。色值保留原始 HEX，不把近似红合并为同一种颜色。
 
 | 颜色名称 | HEX | 建议用途 / 主题 token |
 | --- | --- | --- |
@@ -82,19 +82,19 @@ React 工程优先通过 `HGThemeUtils.getCssVar(token)` 获取当前全局 CSS 
 | --------------- | --------- | --------------- |
 | 页面背景            | `#F0F7FF` | 全站统一            |
 | 卡片、Modal、Drawer | `#FFFFFF` | 白色容器            |
-| 主按钮 Primary     | `#438BFA` | Hover `#2674E8` |
-| 主品牌色 / Logo     | `#438BFA` | 品牌展示            |
-| 次级蓝色按钮          | `#438BFA` | Hover `#2674E8` |
+| 主按钮 Primary     | `#1677FF`，白字 | Hover `#4096FF`，按字号核对对比度 |
+| 主品牌色 / Logo     | `#1677FF` | 品牌展示            |
+| 次级蓝色按钮          | `#1677FF` | Hover `#4096FF` |
 | AI 生成按钮         | `#6569D8` | Hover `#565AC4` |
 | AI 动效 / 高光      | `#28B4F5` | 少量使用            |
 | AI 推荐模块         | `#8185F4` | 配浅紫背景           |
 | 价格 / 金额 / 警示文字 | `#E83E36` | 优先红色语义 token，校验对比度 |
 | 上涨 K 线 / 指数     | `#C53225` / `#D65E53` | 按图表和数字场景区分 |
 | 活动 / 红色场景按钮   | `#EA494A` / `#DA332A` | 品牌展示与可读按钮分别选用 |
-| 导航选中            | `#438BFA` | 浅蓝背景 + 深蓝文字     |
-| 普通链接            | `#438BFA` | Hover `#2674E8` |
-| 输入框 Focus       | `#438BFA` | 浅蓝聚焦光环          |
-| Switch 开启       | `#438BFA` | 电光蓝可用于动态点缀      |
+| 导航选中            | `#1677FF` | 浅蓝背景 + 深蓝文字     |
+| 普通链接            | `#1677FF` | Hover `#4096FF` |
+| 输入框 Focus       | `#1677FF` | 浅蓝聚焦光环          |
+| Switch 开启       | `#1677FF` | 电光蓝可用于动态点缀      |
 | 进度条             | `#28B4F5` | 轨道使用浅蓝          |
 | 表格选中行           | `#EAF4FF` | Hover `#F2F8FF` |
 | 成功 / 警告 / 错误    | 独立语义色     | 不用蓝色代替          |
@@ -102,7 +102,7 @@ React 工程优先通过 `HGThemeUtils.getCssVar(token)` 获取当前全局 CSS 
 | 正文文字            | `#172B4D` | 保证可读性           |
 | 边框 / 分割线        | `#D6E7F9` | 低对比度            |
 
-品牌亮蓝与电光蓝配白色小字的对比度可能不足；按钮文字应使用现有暗色 `#0F2440`，或按场景选择深一档的已有蓝紫色并验证对比度。
+主按钮沿用“保存”按钮的蓝底白字；白色小字的对比度需按实际字号验证，必要时选用更深的已有主蓝状态色。深色主题的浅蓝底仍需使用深字。
 
 ## 三、React 工程推荐目录结构
 
@@ -139,9 +139,9 @@ src/
   color-scheme: light;
 
   /* ===== 1. 品牌基础色 ===== */
-  --brand-glacier: #438BFA;
+  --brand-glacier: #1677FF;
   --brand-electric: #28B4F5;
-  --brand-sky: #438BFA;
+  --brand-sky: #1677FF;
   --brand-nebula: #8185F4;
   --brand-ocean: #89C8FF;
 
@@ -151,14 +151,14 @@ src/
   --brand-frost: #CFF0FF;
 
   /* ===== 3. 主交互 ===== */
-  --color-primary: #438BFA;
-  --color-primary-hover: #2674E8;
-  --color-primary-active: #28B4F5;
+  --color-primary: #1677FF;
+  --color-primary-hover: #4096FF;
+  --color-primary-active: #0958D9;
   --color-primary-soft: #EAF4FF;
 
   /* ===== 4. 次级交互 ===== */
-  --color-secondary: #438BFA;
-  --color-secondary-hover: #2674E8;
+  --color-secondary: #1677FF;
+  --color-secondary-hover: #4096FF;
   --color-secondary-soft: #EDF4FF;
 
   /* ===== 5. 电光强调 ===== */
@@ -188,13 +188,13 @@ src/
   --color-text-secondary: #61758E;
   --color-text-muted: #71849B;
   --color-text-inverse: #FFFFFF;
-  --color-link: #438BFA;
-  --color-link-hover: #2674E8;
+  --color-link: #1677FF;
+  --color-link-hover: #4096FF;
 
   /* ===== 9. 边框 ===== */
   --color-border: #D6E7F9;
   --color-border-strong: #B5D0ED;
-  --color-border-focus: #438BFA;
+  --color-border-focus: #1677FF;
 
   /* ===== 10. 状态语义 ===== */
   --color-success: #16835D;
@@ -203,7 +203,7 @@ src/
   --color-warning-soft: #FFF0F2;
   --color-danger: #DA332A;
   --color-danger-soft: #FFF0F2;
-  --color-info: #438BFA;
+  --color-info: #1677FF;
   --color-info-soft: #EAF4FF;
 
   /* ===== 11. 深海色 ===== */
@@ -226,14 +226,14 @@ src/
   /* ===== 13. 渐变 ===== */
   --gradient-brand: linear-gradient(
     120deg,
-    #438BFA 0%,
+    #1677FF 0%,
     #28B4F5 55%,
     #8185F4 100%
   );
 
   --gradient-ai: linear-gradient(
     135deg,
-    #438BFA 0%,
+    #1677FF 0%,
     #8185F4 100%
   );
 
@@ -382,7 +382,7 @@ src/
 
 /* 主按钮 */
 .hg-button--primary {
-  color: var(--color-text-title);
+  color: #FFFFFF;
   background: var(--color-primary);
 }
 
@@ -671,7 +671,7 @@ export default function ThemeDemo() {
     <main className="hg-page" style={{ padding: 24 }}>
       <div className="hg-card">
         <h2>智能管理平台</h2>
-        <p>冰川科技蓝主题系统</p>
+        <p>主按钮蓝主题系统</p>
 
         <label htmlFor="theme-mode">主题模式</label>
         <select
@@ -784,8 +784,8 @@ export default function HGAntdThemeProvider({ children }) {
           : antdTheme.defaultAlgorithm,
 
         token: {
-          colorPrimary: isDark ? "#89C8FF" : "#438BFA",
-          colorInfo: isDark ? "#89C8FF" : "#438BFA",
+          colorPrimary: isDark ? "#89C8FF" : "#1677FF",
+          colorInfo: isDark ? "#89C8FF" : "#1677FF",
           colorSuccess: isDark ? "#65D9A4" : "#16835D",
           colorWarning: isDark ? "#FFD078" : "#C53225",
           colorError: isDark ? "#FF8D9B" : "#DA332A",
@@ -824,7 +824,7 @@ export default function HGAntdThemeProvider({ children }) {
 
 ```
 
-在应用根组件中，将 `HGAntdThemeProvider` 放在 `ThemeProvider` 内部即可。亮蓝按钮的小字不能默认使用白色，需按实际字号校验对比度并采用现有深色文字；对于 ProLayout，还需要将其主题配置与 `resolvedTheme` 同步。
+在应用根组件中，将 `HGAntdThemeProvider` 放在 `ThemeProvider` 内部即可。浅色主题主按钮与“保存”按钮统一蓝底白字，需按实际字号校验对比度；深色主题浅蓝按钮继续使用深色文字。对于 ProLayout，还需要将其主题配置与 `resolvedTheme` 同步。
 
 ## 五、组件颜色效果预览
 
@@ -861,7 +861,7 @@ AI 智能
 ## 六、生产工程需要遵守的 5 条规则
 
 1. 组件不直接写品牌 HEX。 业务组件使用 `var(--color-primary)` 等语义变量，避免后续换肤时全工程修改。
-2. 全站只有一套主交互体系。晴空科技蓝负责品牌和主交互，电光蓝只用于特殊动作和动效，亮色按钮搭配深色文字。
+2. 全站只有一套主交互体系。保存按钮蓝负责品牌和主交互，电光蓝只用于特殊动作和动效；浅色主按钮使用白字，深色主题的浅蓝底按钮使用深字。
 3. AI 模块统一使用星云蓝紫。 AI 图标、智能推荐、AI 卡片采用紫色，必要时使用蓝紫渐变，形成独立识别体系。
 4. 深色模式必须单独校验。 特别是按钮 hover、disabled、文字对比度、表格、弹窗和图表；不要直接反转颜色。
 5. CSS 变量是唯一颜色来源。 Ant Design 的主题 Token、业务组件 CSS 和图表颜色配置都应从统一的主题配置映射，避免维护多套不一致的色值。
